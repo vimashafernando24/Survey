@@ -105,18 +105,19 @@ select option { background:var(--surface); }
 @media(max-width:900px){ .layout{flex-direction:column;} .sidebar{position:relative;top:0;height:auto;width:100%;} .main{padding-top:24px;} }
 @media(max-width:700px){ .sidebar{display:none;} .q-text{font-size:23px;} .stats{grid-template-columns:1fr 1fr;} .topbar{justify-content:center;text-align:center;} .top-pct{margin-left:0;} }
 @media (max-width: 768px) {
-  /* Compact topbar: force single row so height is predictable */
-  .topbar { padding:12px 14px; gap:8px; flex-wrap:nowrap; justify-content:flex-start; text-align:left; }
+  /* Topbar: fixed 50px height — physically prevents any wrapping or overflow */
+  .topbar { height:50px; padding:0 14px; gap:8px; flex-wrap:nowrap; overflow:hidden;
+            justify-content:flex-start; text-align:left; align-items:center; }
   .logo { font-size:15px; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-  /* Hide section label + progress note from topbar; they still appear inside the question card */
-  .top-controls { display:none; }
-  .top-pct { font-size:11px; flex-shrink:0; white-space:nowrap; margin-left:0; }
+  /* Hide section label + progress note from topbar; section label still shows inside question card */
+  .top-controls { display:none !important; }
+  .top-pct { font-size:12px; flex-shrink:0; white-space:nowrap; margin-left:0; }
 
-  /* Progress bar: shift down to sit flush below the ~46px mobile topbar */
-  .prog-outer { top:46px; }
+  /* Progress bar sits immediately below the 50px topbar */
+  .prog-outer { top:50px; }
 
-  /* Main layout: clear topbar (46px) + progress bar (7px) + small gap */
-  .layout { margin-top:60px; padding:0 12px 20px; }
+  /* Content starts below topbar (50px) + progress bar (7px) + 7px breathing room */
+  .layout { margin-top:64px; padding:0 12px 20px; }
   .main { padding:16px 0 60px; }
 
   /* Question typography */
