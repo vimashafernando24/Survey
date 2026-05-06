@@ -104,6 +104,54 @@ select option { background:var(--surface); }
 .card, .div-card, .info-card, .end-screen { animation:fadeUp .28s ease; }
 @media(max-width:900px){ .layout{flex-direction:column;} .sidebar{position:relative;top:0;height:auto;width:100%;} .main{padding-top:24px;} }
 @media(max-width:700px){ .sidebar{display:none;} .q-text{font-size:23px;} .stats{grid-template-columns:1fr 1fr;} .topbar{justify-content:center;text-align:center;} .top-pct{margin-left:0;} }
+@media (max-width: 768px) {
+  /* Compact topbar: force single row so height is predictable */
+  .topbar { padding:12px 14px; gap:8px; flex-wrap:nowrap; justify-content:flex-start; text-align:left; }
+  .logo { font-size:15px; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  /* Hide section label + progress note from topbar; they still appear inside the question card */
+  .top-controls { display:none; }
+  .top-pct { font-size:11px; flex-shrink:0; white-space:nowrap; margin-left:0; }
+
+  /* Progress bar: shift down to sit flush below the ~46px mobile topbar */
+  .prog-outer { top:46px; }
+
+  /* Main layout: clear topbar (46px) + progress bar (7px) + small gap */
+  .layout { margin-top:60px; padding:0 12px 20px; }
+  .main { padding:16px 0 60px; }
+
+  /* Question typography */
+  .q-text { font-size:20px; }
+  .q-hint { font-size:13px; margin-bottom:18px; }
+
+  /* Option items */
+  .opt { padding:12px 14px; border-radius:16px; }
+  .opt-label { font-size:14px; }
+  .opt-sub { font-size:12px; }
+
+  /* Buttons */
+  .btn { padding:12px 18px; font-size:14px; }
+
+  /* Inputs & selects */
+  input[type=number], select, input[type=text] { max-width:100%; font-size:14px; padding:12px 14px; margin-bottom:20px; }
+
+  /* Intro info card */
+  .info-card { padding:24px 18px; }
+  .info-card h1 { font-size:26px; margin-bottom:12px; }
+
+  /* Section divider cards */
+  .div-card { padding:20px 20px; border-radius:18px; }
+  .div-card h2 { font-size:20px; }
+
+  /* Completion / end screen */
+  .end-screen { padding:24px 0; }
+  .end-screen h1 { font-size:26px; }
+  .end-screen p { font-size:14px; margin-bottom:20px; }
+  .stats { grid-template-columns:1fr; gap:10px; margin-bottom:20px; }
+  .stat { padding:14px 16px; }
+  .stat-v { font-size:22px; }
+  .export-row { flex-direction:column; gap:10px; }
+  .export-row .btn { width:100%; }
+}
 </style>
 </head>
 <body>
