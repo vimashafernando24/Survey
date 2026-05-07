@@ -320,7 +320,9 @@ translations.si = {
     progressMsg3:'ඉතා හොඳ — ඔබ සමාප්තියට ළඟ ළඟය.',
     submitSuccess:'සමීක්ෂාව සාර්ථකව ඉදිරිපත් කළේ.',
     submitFail:'ඉදිරිපත් කිරීම අසාර්ථකය. කරුණාකර නැවත උත්සාහ කරන්න.',
-    submitError:'ඉදිරිපත් කිරීම අසාර්ථකය. ඔබේ ජාල සම්බන්ධතාව පරීක්ෂා කරන්න.'
+    submitError:'ඉදිරිපත් කිරීම අසාර්ථකය. ඔබේ ජාල සම්බන්ධතාව පරීක්ෂා කරන්න.',
+    validationRange:'{min} සහ {max} අතර අගයක් ඇතුළු කරන්න.',
+    validationNegative:'0 හෝ ඊට ඉහළ අගයක් ඇතුළු කරන්න.'
   },
   sections:{
     A:'කොටස A — හැඳින්වීම',B:'කොටස B — පුද්ගලික සහ ගෘහ',
@@ -625,7 +627,9 @@ translations.ta = {
     progressMsg3:'சிறப்பாக உள்ளது — நீங்கள் கிட்டத்தட்ட முடித்துவிட்டீர்கள்.',
     submitSuccess:'கணக்கெடுப்பு வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது.',
     submitFail:'சமர்ப்பிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.',
-    submitError:'சமர்ப்பிப்பு தோல்வியடைந்தது. இணைய இணைப்பை சரிபார்க்கவும்.'
+    submitError:'சமர்ப்பிப்பு தோல்வியடைந்தது. இணைய இணைப்பை சரிபார்க்கவும்.',
+    validationRange:'{min} மற்றும் {max} இடையே ஒரு மதிப்பை உள்ளிடவும்.',
+    validationNegative:'0 அல்லது அதற்கும் மேலான மதிப்பை உள்ளிடவும்.'
   },
   sections:{
     A:'பிரிவு A — அறிமுகம்',B:'பிரிவு B — தனிப்பட்ட மற்றும் குடும்பம்',
@@ -1980,11 +1984,59 @@ const Q = [
 {id:'END_SCREEN',sec:'END',fw:'SWTS',type:'end'}
 ];
 
+// ─── FIELD VALIDATION RULES ──────────────────────────────────
+const FIELD_RULES = {
+  edu_end_year:          {min:1950, max:2026},
+  age_first_married:     {min:10,   max:35},
+  household_size:        {min:1,    max:30},
+  num_children:          {min:0,    max:20},
+  household_workers:     {min:0,    max:30},
+  household_unemployed:  {min:0,    max:30},
+  usual_hours_per_week:  {min:0,    max:100},
+  actual_hours_last_week:{min:0,    max:120},
+  num_applications:      {min:0,    max:500},
+  num_interviews:        {min:0,    max:200},
+  jobs_applied_before_hire:{min:0,  max:500},
+  interviews_before_hire:  {min:0,  max:200}
+};
+
+function getValidationError(q, val){
+  if(q.type !== 'number') return null;
+  if(val === undefined || val === '') return null;
+  const num = Number(val);
+  if(isNaN(num)) return null;
+  const rule = q.var ? FIELD_RULES[q.var] : null;
+  if(rule){
+    if(num < rule.min || num > rule.max){
+      const msg = t('static.validationRange',
+        `Please enter a value between ${rule.min} and ${rule.max}.`);
+      return msg.replace('{min}', rule.min).replace('{max}', rule.max);
+    }
+  } else if(num < 0){
+    return t('static.validationNegative','Please enter 0 or a positive number.');
+  }
+  return null;
+}
+
+function updateValidation(qId){
+  const q = getQ(qId);
+  if(!q) return;
+  fieldTouched = true;
+  answers[qId] = document.getElementById('num_'+qId)?.value ?? answers[qId];
+  const errEl = document.getElementById('val_err_'+qId);
+  if(errEl){
+    const err = getValidationError(q, answers[qId]);
+    errEl.textContent = err || '';
+    errEl.style.display = err ? '' : 'none';
+  }
+}
+
 // ─── FLOW ENGINE ─────────────────────────────────────────────
 let answers = {};
 let history = [];
 let currentId = 'INTRO';
 let validationAttempted = false;
+let fieldTouched = false;
 
 function getQ(id){ return Q.find(q=>q.id===id); }
 
@@ -2018,6 +2070,8 @@ function goTo(nextId){
 
 function goBack(){
   if(history.length===0) return;
+  validationAttempted = false;
+  fieldTouched = false;
   currentId = history.pop();
   render();
 }
@@ -2030,12 +2084,21 @@ function handleNext(){
     render();
     return;
   }
+  const valErr = getValidationError(q, answers[q.id]);
+  if(valErr){
+    validationAttempted = true;
+    fieldTouched = true;
+    render();
+    return;
+  }
   validationAttempted = false;
+  fieldTouched = false;
   goTo(getNext(q));
 }
 
 function skipQ(){
   validationAttempted = false;
+  fieldTouched = false;
   const q = getQ(currentId);
   if(!q) return;
   goTo(getNext(q));
@@ -2143,8 +2206,14 @@ function renderQuestion(q,main){
           <span class="opt-label">${translateOptionLabel(q.id,index,o.l)}</span>
         </div>`).join('')+`</div>`;
   } else if(q.type==='number'){
-    inputHtml=`<input type="number" id="num_${q.id}" value="${saved||''}" placeholder="Enter number" min="0"
-      oninput="answers['${q.id}']=this.value;updateNext()">`;
+    const rule = q.var ? FIELD_RULES[q.var] : null;
+    const minAttr = rule ? rule.min : 0;
+    const maxAttr = rule ? ` max="${rule.max}"` : '';
+    const valErr = (validationAttempted || fieldTouched) ? getValidationError(q, saved) : null;
+    inputHtml=`<input type="number" id="num_${q.id}" value="${saved||''}" placeholder="Enter number"
+      min="${minAttr}"${maxAttr}
+      oninput="updateValidation('${q.id}')">
+    <div id="val_err_${q.id}" class="q-error" style="${valErr?'':'display:none'}">${valErr||''}</div>`;
   } else if(q.type==='select'){
     inputHtml=`<select id="sel_${q.id}" onchange="answers['${q.id}']=this.value;updateNext()">
       <option value="">${t('static.selectPlaceholder','— Select district —')}</option>
