@@ -25,7 +25,7 @@ const Q = [
 
 // ── B — PERSONAL ────────────────────────────────────────────
 {id:'B_DIV',sec:'B',fw:'SWTS',type:'divider',
- title:'Section B — Personal & Household',
+ title:'Section A — Personal & Household',
  body:'We begin with some background information about you and your household.',
  next:'B1'},
 
@@ -149,7 +149,7 @@ const Q = [
 
 // ── C — EDUCATION & HISTORY ─────────────────────────────────
 {id:'C_DIV',sec:'C',fw:'SWTS',type:'divider',
- title:'Section C — Education & Activity History',
+ title:'Section B — Education & Activity History',
  body:'This section asks about your education and what you have been doing since finishing school. Please be as accurate as possible — your activity history is important for the research.',
  next:'C1'},
 
@@ -390,7 +390,7 @@ const Q = [
 
 // ── D — IN EDUCATION ────────────────────────────────────────
 {id:'D_DIV',sec:'D',fw:'SWTS',type:'divider',
- title:'Section D — You are Currently in Education',
+ title:'Section C — In Education',
  body:'These questions are about your current study experience and your plans for the future.',
  next:'D1'},
 
@@ -506,7 +506,7 @@ const Q = [
 
 // ── E — UNEMPLOYED ──────────────────────────────────────────
 {id:'E_DIV',sec:'E',fw:'SWTS',type:'divider',
- title:'Section E — Unemployed / Seeking Work',
+ title:'Section D — Unemployed / Seeking Work',
  body:'These questions are about your experience of looking for work.',
  next:'E1'},
 
@@ -732,7 +732,7 @@ const Q = [
 
 // ── F — EMPLOYED ────────────────────────────────────────────
 {id:'F_DIV',sec:'F',fw:'SWTS',type:'divider',
- title:'Section F — You are Employed or Have a Job',
+ title:'Section E — Employed or Have a Job',
  body:'These questions are about your current work situation. Please answer in relation to your main job.',
  next:a=>['temp_absent','finished_plan_work'].includes(a.C20)?'F1':'F4'},
 
@@ -1170,7 +1170,7 @@ const Q = [
 
 // ── G — NOT IN LABOUR FORCE ─────────────────────────────────
 {id:'G_DIV',sec:'G',fw:'SWTS',type:'divider',
- title:'Section G — Currently Outside the Labour Force',
+ title:'Section F — Currently Outside the Labour Force',
  body:'These questions are about your current situation and your plans for the future.',
  next:'G1'},
 

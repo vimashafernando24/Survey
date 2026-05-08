@@ -7,6 +7,12 @@ import {
   SECTIONS_META,
   translations
 } from './surveyData.js';
+import MobileSectionNav from './components/MobileSectionNav.jsx';
+import ProgressBar from './components/ProgressBar.jsx';
+import QuestionCard from './components/QuestionCard.jsx';
+import SectionChips from './components/SectionChips.jsx';
+import SectionReview from './components/SectionReview.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import './styles.css';
 
 const DRAFT_KEY = 'nysc_swts_v1';
@@ -37,10 +43,6 @@ function clearDraft(){
 
 function getQ(id){ return Q.find(q=>q.id===id); }
 
-function fwBadgeLabel(fw){
-  return fw === 'Bourdieu' ? 'BOU' : fw;
-}
-
 function App() {
   const [currentLang, setCurrentLang] = useState('en');
   const [answers, setAnswers] = useState({});
@@ -53,6 +55,9 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [reviewMode, setReviewMode] = useState(null);
+  const [reviewEditContext, setReviewEditContext] = useState(null);
+  const [savedFeedback, setSavedFeedback] = useState(false);
 
   const q = getQ(currentId);
 
@@ -68,6 +73,12 @@ function App() {
   useEffect(() => {
     if(!showResume) window.scrollTo({top:0,behavior:'smooth'});
   }, [currentId, currentLang, submitted, showResume]);
+
+  useEffect(() => {
+    if(!savedFeedback) return;
+    const timer = setTimeout(() => setSavedFeedback(false), 2500);
+    return () => clearTimeout(timer);
+  }, [savedFeedback]);
 
   const t = (path, fallback) => {
     let value = readPath(translations[currentLang], path);
@@ -96,6 +107,16 @@ function App() {
     } else if(num < 0){
       return t('static.validationNegative','Please enter 0 or a positive number.');
     }
+    if(['household_workers','household_unemployed'].includes(question.var)){
+      const hsSizeQ = Q.find(q => q.var === 'household_size');
+      if(hsSizeQ){
+        const hsSize = Number(answers[hsSizeQ.id]);
+        if(!isNaN(hsSize) && hsSize > 0 && num > hsSize){
+          return t('static.validationExceedsHousehold',
+            `This cannot exceed the total household size (${hsSize}).`);
+        }
+      }
+    }
     return null;
   };
 
@@ -108,6 +129,116 @@ function App() {
     if(!question.next) return null;
     if(typeof question.next === 'function') return question.next(answerSet);
     return question.next;
+  };
+
+  const getBranchSection = (answerSet = answers) => {
+    switch(answerSet.C20){
+      case 'education': return 'D';
+      case 'unemployed':
+      case 'finished_plan_look': return 'E';
+      case 'working':
+      case 'finished_plan_work':
+      case 'temp_absent': return 'F';
+      case 'home_duties':
+      case 'other_inactive': return 'G';
+      default: return answerSet.C20 ? 'G' : null;
+    }
+  };
+
+  const getVisibleSections = (answerSet = answers) => {
+    return ['A','B','C','D','E','F','G','END'];
+  };
+
+  const getPathSections = (answerSet = answers) => {
+    const branchSec = getBranchSection(answerSet);
+    return branchSec ? ['A','B','C',branchSec,'END'] : ['A','B','C','END'];
+  };
+
+  const isAnswerPresent = (question, answerSet = answers) => {
+    const value = answerSet[question.id];
+    if(question.type === 'radio' || question.type === 'select') return !!value;
+    if(question.type === 'number') return value !== undefined && value !== '';
+    if(question.type === 'checkbox') return Array.isArray(value) && value.length > 0;
+    return true;
+  };
+
+  const hasStoredAnswer = (question, answerSet = answers) => {
+    const value = answerSet[question.id];
+    if(value === undefined || value === '') return false;
+    if(Array.isArray(value) && value.length === 0) return false;
+    return true;
+  };
+
+  const getRequiredSectionQuestions = (sec, answerSet = answers) => {
+    const divider = Q.find(q => q.sec === sec && q.type === 'divider');
+    if(!divider){
+      return Q.filter(question =>
+        question.sec === sec &&
+        question.var &&
+        ['radio','select','number','checkbox'].includes(question.type) &&
+        !shouldSkip(question, answerSet)
+      );
+    }
+    const reachable = [];
+    let walkedId = divider.id;
+    const visited = new Set();
+    while(walkedId && !visited.has(walkedId)){
+      visited.add(walkedId);
+      const wq = getQ(walkedId);
+      if(!wq || wq.sec !== sec) break;
+      if(wq.var && ['radio','select','number','checkbox'].includes(wq.type) && !shouldSkip(wq, answerSet)){
+        reachable.push(wq);
+      }
+      const nextId = getNext(wq, answerSet);
+      if(!nextId) break;
+      const nextWq = getQ(nextId);
+      if(!nextWq || nextWq.sec !== sec) break;
+      walkedId = nextId;
+    }
+    return reachable;
+  };
+
+  const isSectionComplete = (sec, answerSet = answers, pathSections = getPathSections(answerSet)) => {
+    if(sec === 'A') return false;
+    if(!pathSections.includes(sec)) return false;
+    if(sec === 'END') return submitted;
+    const requiredQuestions = getRequiredSectionQuestions(sec, answerSet);
+    if(requiredQuestions.length === 0){
+      const activeSec = getQ(currentId)?.sec;
+      return submitted || pathSections.indexOf(sec) < pathSections.indexOf(activeSec);
+    }
+    return requiredQuestions.every(question => isAnswerPresent(question, answerSet));
+  };
+
+  const getSectionStates = (visibleSections, activeSec) => {
+    const branchSec = getBranchSection();
+    const pathSections = getPathSections();
+    const branchSections = new Set(['D','E','F','G']);
+    return visibleSections.reduce((states, sec) => {
+      const pathIndex = pathSections.indexOf(sec);
+      const isBranch = branchSections.has(sec);
+      const onPath = pathIndex >= 0;
+      const active = sec === activeSec;
+      const hasAnswers = Q.some(q => q.sec === sec && q.var && hasStoredAnswer(q, answers));
+      // Include off-path sections (e.g. G reached via F→G re-routing) in completion check
+      const pathForCompletion = hasAnswers && !onPath ? [...pathSections, sec] : pathSections;
+      const completed = (onPath || hasAnswers) && isSectionComplete(sec, answers, pathForCompletion);
+      const previousComplete = onPath && pathSections.slice(0, pathIndex).every(
+        pathSec => isSectionComplete(pathSec, answers, pathSections)
+      );
+      const available = onPath && !active && !completed && previousComplete;
+      // notApplicable only if truly off-path with no answers and not active
+      const notApplicable = !!branchSec && isBranch && sec !== branchSec && !active && !hasAnswers;
+      states[sec] = {
+        active,
+        completed,
+        available,
+        locked: !active && !completed && !available && !hasAnswers,
+        notApplicable,
+        selectedBranch: !!branchSec && (sec === branchSec || (isBranch && hasAnswers && !onPath))
+      };
+      return states;
+    }, {});
   };
 
   const saveDraft = (nextAnswers, nextHistory, nextId, nextLang) => {
@@ -127,10 +258,14 @@ function App() {
       if(further) goTo(further, answerSet, historySet, lang);
       return;
     }
+    const currentSec = getQ(currentId)?.sec;
+    const nextSec = nextQuestion.sec;
     const nextHistory = [...historySet, currentId];
     setHistory(nextHistory);
     setCurrentId(nextId);
-    setSubmitted(false);
+    if(!submitted) setSubmitted(false);
+    setReviewMode(null);
+    setReviewEditContext(null);
     setPreviewVisible(false);
     saveDraft(answerSet, nextHistory, nextId, lang);
   };
@@ -143,86 +278,128 @@ function App() {
     setFieldTouched(false);
     setHistory(nextHistory);
     setCurrentId(nextId);
-    setSubmitted(false);
+    if(!submitted) setSubmitted(false);
+    setReviewMode(null);
+    setReviewEditContext(null);
     setPreviewVisible(false);
     saveDraft(answers, nextHistory, nextId, currentLang);
   };
 
-  const getAccessibleSections = () => {
-    // Determine which sections are accessible for navigation
-    const visitedSecs = new Set();
-    history.forEach(qId => {
-      const q = getQ(qId);
-      if(q && q.sec) visitedSecs.add(q.sec);
-    });
-    const currentQ = getQ(currentId);
-    if(currentQ && currentQ.sec) visitedSecs.add(currentQ.sec);
-    
-    // Always allow going back to A, B, C (intro and history sections)
-    const accessible = new Set(['A', 'B', 'C', 'END']);
-    
-    // If user has answered C20 (branching question), determine their branch section
-    const c20Answer = answers.C20;
-    if(c20Answer) {
-      let branchSec;
-      switch(c20Answer) {
-        case 'education': branchSec = 'D'; break;
-        case 'unemployed':
-        case 'finished_plan_look': branchSec = 'E'; break;
-        case 'working':
-        case 'finished_plan_work':
-        case 'temp_absent': branchSec = 'F'; break;
-        case 'home_duties':
-        case 'other_inactive':
-        default: branchSec = 'G';
-      }
-      accessible.add(branchSec);
-      
-      // Allow access to visited sections even if they're in the branch
-      visitedSecs.forEach(s => accessible.add(s));
-    }
-    
-    return accessible;
+  const openSectionReview = (section) => {
+    setReviewMode({type:'section', section});
+    setReviewEditContext(null);
+    setValidationAttempted(false);
+    setFieldTouched(false);
+    setPreviewVisible(false);
   };
 
-  const goToSection = (targetSec) => {
-    const accessible = getAccessibleSections();
-    if(!accessible.has(targetSec)) return; // Prevent unauthorized navigation
-    
-    // Find first question in target section
-    const firstQInSec = Q.find(q => q.sec === targetSec && q.type !== 'divider');
+  const closeReview = () => {
+    setReviewMode(null);
+    setReviewEditContext(null);
+    setValidationAttempted(false);
+    setFieldTouched(false);
+  };
+
+  const goToSection = (targetSec, sectionState = {}) => {
+    if(sectionState.locked || sectionState.notApplicable) return;
+
+    // During edit-from-review: clicking the progress section returns to saved progress
+    if(reviewEditContext) {
+      const progressSec = getQ(reviewEditContext.progressId)?.sec;
+      if(targetSec === progressSec) {
+        returnFromReviewEdit('progress');
+        return;
+      }
+    }
+
+    // During section review (not edit): clicking the active (progress) section closes review
+    if(reviewMode && !reviewEditContext) {
+      if(targetSec === q?.sec) {
+        closeReview();
+        return;
+      }
+    }
+
+    if(submitted && targetSec === 'END'){
+      setReviewMode(null);
+      return;
+    }
+    if(sectionState.completed && targetSec !== 'END') {
+      openSectionReview(targetSec);
+      return;
+    }
+
+    const firstQInSec = Q.find(qq => qq.sec === targetSec && qq.type !== 'divider');
     if(firstQInSec) {
       goTo(firstQInSec.id);
     }
   };
 
-  const checkHasAnswer = (question) => {
-    const a = answers[question.id];
-    if(question.type === 'radio' || question.type === 'select') return !!a;
-    if(question.type === 'number') return a !== undefined && a !== '';
-    if(question.type === 'checkbox') return Array.isArray(a) && a.length > 0;
-    return true;
+  const editReviewQuestion = (qId) => {
+    if(submitted) return;
+    const nextQ = getQ(qId);
+    if(!nextQ) return;
+    setReviewEditContext({
+      reviewMode,
+      progressId: currentId,
+      progressHistory: history
+    });
+    setReviewMode(null);
+    setValidationAttempted(false);
+    setFieldTouched(false);
+    setSavedFeedback(false);
+    setCurrentId(qId);
+    if(!submitted) setSubmitted(false);
+    setPreviewVisible(false);
   };
 
-  const handleNext = () => {
-    if(!q) return;
+  const validateCurrentQuestion = () => {
+    if(!q) return true;
     if(!checkHasAnswer(q)){
       setValidationAttempted(true);
-      return;
+      return false;
     }
     const valErr = getValidationError(q, answers[q.id]);
     if(valErr){
       setValidationAttempted(true);
       setFieldTouched(true);
-      return;
+      return false;
     }
     setValidationAttempted(false);
     setFieldTouched(false);
+    return true;
+  };
+
+  const returnFromReviewEdit = (destination) => {
+    if(!reviewEditContext || !validateCurrentQuestion()) return;
+    const progressId = reviewEditContext.progressId;
+    const progressHistory = reviewEditContext.progressHistory || [];
+    setCurrentId(progressId);
+    setHistory(progressHistory);
+    if(destination === 'review'){
+      setReviewMode(reviewEditContext.reviewMode);
+    } else {
+      setReviewMode(null);
+    }
+    setReviewEditContext(null);
+    setSavedFeedback(false);
+    setPreviewVisible(false);
+    saveDraft(answers, progressHistory, progressId, currentLang);
+  };
+
+  const checkHasAnswer = (question) => {
+    return isAnswerPresent(question);
+  };
+
+  const handleNext = () => {
+    if(!q) return;
+    if(!validateCurrentQuestion()) return;
     goTo(getNext(q));
   };
 
   const pickRadio = (qId, val) => {
     setAnswers(prev => ({...prev, [qId]: val}));
+    if(reviewEditContext) setSavedFeedback(true);
   };
 
   const toggleChk = (qId, val) => {
@@ -233,15 +410,18 @@ function App() {
       else arr.push(val);
       return {...prev, [qId]: arr};
     });
+    if(reviewEditContext) setSavedFeedback(true);
   };
 
   const updateNumber = (qId, val) => {
     setFieldTouched(true);
     setAnswers(prev => ({...prev, [qId]: val}));
+    if(reviewEditContext) setSavedFeedback(true);
   };
 
   const updateSelect = (qId, val) => {
     setAnswers(prev => ({...prev, [qId]: val}));
+    if(reviewEditContext) setSavedFeedback(true);
   };
 
   const getPct = () => {
@@ -268,8 +448,45 @@ function App() {
     return t('static.progressMsg3','Great work — you are almost finished.');
   };
 
+  const buildPathMetadata = (answerSet = answers) => {
+    const activeBranch = getBranchSection(answerSet) || 'unknown';
+    const activeSections = getPathSections(answerSet);
+    const activeSectionSet = new Set(activeSections);
+    const answeredQuestions = Q.filter(question => question.var && hasStoredAnswer(question, answerSet));
+    const answeredSections = [...new Set(answeredQuestions.map(question => question.sec))];
+    const offPathSections = answeredSections.filter(section => !activeSectionSet.has(section));
+    const activeQuestionIdSet = new Set();
+
+    activeSections.forEach(section => {
+      getRequiredSectionQuestions(section, answerSet).forEach(question => {
+        if(hasStoredAnswer(question, answerSet)){
+          activeQuestionIdSet.add(question.id);
+        }
+      });
+    });
+
+    const offPathQuestionIds = answeredQuestions
+      .filter(question => !activeQuestionIdSet.has(question.id))
+      .map(question => question.id);
+
+    return {
+      active_branch: activeBranch,
+      active_sections: activeSections,
+      answered_sections: answeredSections,
+      off_path_sections: offPathSections,
+      off_path_question_ids: offPathQuestionIds,
+      active_question_ids: [...activeQuestionIdSet]
+    };
+  };
+
   const buildData = () => {
-    const out = {_meta:{timestamp:new Date().toISOString(),version:'SWTS+Bourdieu+SDT',branch:answers.C20||'unknown',frameworks:['SWTS','Bourdieu','SDT']}};
+    const out = {_meta:{
+      timestamp:new Date().toISOString(),
+      version:'SWTS+Bourdieu+SDT',
+      branch:answers.C20||'unknown',
+      frameworks:['SWTS','Bourdieu','SDT'],
+      ...buildPathMetadata(answers)
+    }};
     Q.forEach(question => { if(question.var && answers[question.id] !== undefined) out[question.var] = answers[question.id]; });
     out.selected_language = currentLang;
     return out;
@@ -301,6 +518,7 @@ function App() {
   };
 
   const submitSurvey = () => {
+    if(submitting || submitted) return;
     setSubmitting(true);
     const formData = buildData();
     if(enableApiSubmit){
@@ -312,6 +530,9 @@ function App() {
       .then(response=>{
         if(response.ok){
           clearDraft();
+          setReviewMode(null);
+          setReviewEditContext(null);
+          setSubmitting(false);
           setSubmitted(true);
         } else {
           setSubmitting(false);
@@ -324,6 +545,9 @@ function App() {
       });
     } else {
       clearDraft();
+      setReviewMode(null);
+      setReviewEditContext(null);
+      setSubmitting(false);
       setSubmitted(true);
     }
   };
@@ -344,6 +568,8 @@ function App() {
     setCurrentLang(pendingDraft.lang || 'en');
     setPendingDraft(null);
     setShowResume(false);
+    setReviewMode(null);
+    setReviewEditContext(null);
   };
 
   const startFresh = () => {
@@ -355,11 +581,76 @@ function App() {
     setCurrentId('INTRO');
     setCurrentLang('en');
     setSubmitted(false);
+    setSubmitting(false);
+    setReviewMode(null);
+    setReviewEditContext(null);
   };
 
+  const getSectionReviewQuestions = (section) => (
+    Q.filter(question =>
+      question.sec === section &&
+      question.var &&
+      hasStoredAnswer(question)
+    )
+  );
+
+  const getReviewQuestions = () => {
+    if(!reviewMode) return [];
+    if(reviewMode.type === 'section') return getSectionReviewQuestions(reviewMode.section);
+    return [];
+  };
+
+  const getFinalReviewSections = () => {
+    const path = getPathSections().filter(s => s !== 'END');
+    const offPath = ['D','E','F','G'].filter(s =>
+      !path.includes(s) && Q.some(q => q.sec === s && q.var && hasStoredAnswer(q))
+    );
+    return [...path, ...offPath]
+      .map(section => ({
+        section,
+        label: getSectionLabel(section),
+        questions: getSectionReviewQuestions(section)
+      }))
+      .filter(group => group.questions.length > 0);
+  };
+
+  const visibleSections = getVisibleSections();
   const pct = q?.type === 'end' || submitted ? 100 : getPct();
-  const topSec = q ? getSectionLabel(q.sec) : '';
+
+  // Chips for current section — only during normal question flow
+  let sectionChips = null;
+  if (!reviewMode && !reviewEditContext && q?.sec && q.sec !== 'A' && q.sec !== 'END') {
+    const chipSec = q.sec;
+    const rawChips = Q.filter(question =>
+      question.sec === chipSec &&
+      ['radio','select','number','checkbox'].includes(question.type) &&
+      !shouldSkip(question, answers)
+    );
+    if (rawChips.length > 0) {
+      sectionChips = rawChips.map(question => ({
+        id: question.id,
+        isAnswered: hasStoredAnswer(question),
+        isCurrent: question.id === currentId
+      }));
+    }
+  }
+
+  const hasSurveyStarted = history.length > 0;
+  const topSec = reviewMode?.type === 'section'
+    ? getSectionLabel(reviewMode.section)
+    : (q ? getSectionLabel(q.sec) : '');
   const previewData = useMemo(() => JSON.stringify(buildData(), null, 2), [answers, currentLang]);
+  const navCurrentSec = reviewEditContext
+    ? getQ(reviewEditContext.progressId)?.sec
+    : (submitted ? 'END' : q?.sec);
+  const sectionStates = getSectionStates(visibleSections, navCurrentSec);
+  const isBranchDivider = !!answers.C20 && q?.type === 'divider' && ['D','E','F','G'].includes(q.sec);
+  const reviewQuestions = getReviewQuestions();
+  const reviewTitle = t('static.reviewAnswers','Review answers');
+  const reviewEyebrow = reviewMode?.type === 'section'
+    ? getSectionLabel(reviewMode.section)
+    : t('static.logo','Youth Transition Survey');
+  const finalReviewSections = getFinalReviewSections();
 
   return (
     <>
@@ -380,12 +671,24 @@ function App() {
           ))}
         </div>
       </div>
-      <div className="prog-outer"><div className="prog-inner" id="progBar" style={{width:`${pct}%`}} /></div>
+      <ProgressBar pct={pct} />
+      <MobileSectionNav
+        visibleSections={visibleSections}
+        sectionStates={sectionStates}
+        getSectionLabel={getSectionLabel}
+        onSectionClick={goToSection}
+      />
 
       <div className="layout">
         <nav className="sidebar">
           <div className="sb-title" id="sectionsLabel">{t('static.sections','Sections')}</div>
-          <Sidebar currentSec={submitted ? 'END' : q?.sec} getSectionLabel={getSectionLabel} accessibleSections={getAccessibleSections()} onSectionClick={goToSection} />
+          <Sidebar
+            visibleSections={visibleSections}
+            sectionStates={sectionStates}
+            getSectionLabel={getSectionLabel}
+            onSectionClick={goToSection}
+          />
+          <SectionChips chips={sectionChips} onChipClick={(qId) => goTo(qId)} />
           <div className="legend">
             <div className="leg-title">{t('static.frameworkKey','Framework Key')}</div>
             <div className="leg-row"><span className="badge SWTS">SWTS</span><span className="leg-txt">ILO School-to-Work</span></div>
@@ -394,16 +697,55 @@ function App() {
           </div>
         </nav>
         <main className="main" id="mainArea">
-          {showResume ? (
+          {reviewMode ? (
+            <SectionReview
+              title={reviewTitle}
+              eyebrow={reviewEyebrow}
+              questions={reviewQuestions}
+              answers={answers}
+              translateQField={translateQField}
+              translateOptionLabel={translateOptionLabel}
+              t={t}
+              readOnly={submitted}
+              onBack={closeReview}
+              onEdit={editReviewQuestion}
+            />
+          ) : showResume ? (
             <ResumePrompt t={t} resumeDraft={resumeDraft} startFresh={startFresh} />
           ) : submitted ? (
-            <ThankYou t={t} developerMode={developerMode} exportJSON={exportJSON} exportCSV={exportCSV} />
+            <ThankYou
+              t={t}
+              developerMode={developerMode}
+              exportJSON={exportJSON}
+              exportCSV={exportCSV}
+              finalReviewSections={finalReviewSections}
+              answers={answers}
+              translateQField={translateQField}
+              translateOptionLabel={translateOptionLabel}
+            />
           ) : q?.type === 'info' ? (
-            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} />
+            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} hasSurveyStarted={hasSurveyStarted} onGoToProgress={goBack} />
           ) : q?.type === 'divider' ? (
-            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} />
+            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} branchNotice={isBranchDivider} />
           ) : q?.type === 'end' ? (
-            <ConfirmCard t={t} history={history} goBack={goBack} submitSurvey={submitSurvey} submitting={submitting} developerMode={developerMode} exportJSON={exportJSON} exportCSV={exportCSV} previewVisible={previewVisible} setPreviewVisible={setPreviewVisible} previewData={previewData} />
+            <ConfirmCard
+              t={t}
+              history={history}
+              goBack={goBack}
+              submitSurvey={submitSurvey}
+              submitting={submitting}
+              developerMode={developerMode}
+              exportJSON={exportJSON}
+              exportCSV={exportCSV}
+              previewVisible={previewVisible}
+              setPreviewVisible={setPreviewVisible}
+              previewData={previewData}
+              finalReviewSections={finalReviewSections}
+              answers={answers}
+              translateQField={translateQField}
+              translateOptionLabel={translateOptionLabel}
+              onEdit={editReviewQuestion}
+            />
           ) : q ? (
             <QuestionCard
               q={q}
@@ -424,6 +766,10 @@ function App() {
               checkHasAnswer={checkHasAnswer}
               handleNext={handleNext}
               goBack={goBack}
+              reviewEditContext={reviewEditContext}
+              savedFeedback={savedFeedback}
+              onReturnToReview={() => returnFromReviewEdit('review')}
+              onReturnToProgress={() => returnFromReviewEdit('progress')}
             />
           ) : null}
         </main>
@@ -432,48 +778,24 @@ function App() {
   );
 }
 
-function Sidebar({currentSec, getSectionLabel, accessibleSections, onSectionClick}) {
-  const ci = SEC_ORDER.indexOf(currentSec);
-  return (
-    <div id="secNav">
-      {SEC_ORDER.map((s) => {
-        const si = SEC_ORDER.indexOf(s);
-        const active = s === currentSec;
-        const done = si < ci;
-        const accessible = accessibleSections && accessibleSections.has(s);
-        const isLocked = !accessible && s !== 'END';
-        
-        return (
-          <button
-            key={s}
-            className={`sb-item${active ? ' active' : ''}${done ? ' done' : ''}${isLocked ? ' locked' : ''}`}
-            onClick={() => onSectionClick(s)}
-            disabled={isLocked}
-            title={isLocked ? 'Complete earlier sections to unlock' : ''}
-          >
-            <div className="sb-dot"></div>
-            <span className="sb-label">{getSectionLabel(s)}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function InfoCard({q, t, getSectionLabel, translateQField, goTo}) {
+function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress}) {
   return (
     <div className="info-card">
       <div className="q-section">{getSectionLabel(q.sec)}</div>
       <h1>{translateQField(q,'title')}</h1>
       <div dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
       <div className="nav" style={{marginTop:28}}>
-        <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Begin Survey →')}</button>
+        {hasSurveyStarted ? (
+          <button className="btn btn-next" onClick={onGoToProgress}>Go to current progress →</button>
+        ) : (
+          <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Begin Survey →')}</button>
+        )}
       </div>
     </div>
   );
 }
 
-function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo}) {
+function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice}) {
   const next = getNext(q);
   const support = SECTION_SUPPORT[q.sec] || '';
   return (
@@ -481,6 +803,9 @@ function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, 
       <div className="div-card">
         <h2>{translateQField(q,'title')}</h2>
         <p>{translateQField(q,'body')}</p>
+        {branchNotice ? (
+          <div className="branch-notice">Based on your answer, this is your survey path.</div>
+        ) : null}
         {support ? <div className="sec-support">{support}</div> : null}
       </div>
       <div className="nav">
@@ -491,89 +816,38 @@ function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, 
   );
 }
 
-function QuestionCard(props) {
-  const {
-    q, answers, history, t, getSectionLabel, translateQField, translateOptionLabel,
-    translateOptionSub, getValidationError, validationAttempted, fieldTouched,
-    pickRadio, toggleChk, updateNumber, updateSelect, checkHasAnswer, handleNext, goBack
-  } = props;
-  const saved = answers[q.id];
-  const hasAnswer = checkHasAnswer(q);
-  const showError = validationAttempted && !hasAnswer;
-  const valErr = (validationAttempted || fieldTouched) ? getValidationError(q, saved) : null;
-
-  return (
-    <div className="card">
-      <div className="q-meta">
-        <span className="q-id">{q.id}</span>
-        <span className={`badge ${q.fw}`}>{fwBadgeLabel(q.fw)}</span>
-        <span className="q-section">{getSectionLabel(q.sec)}</span>
-      </div>
-      <div className="q-text">{translateQField(q,'text')}</div>
-      {q.hint ? <div className="q-hint">{translateQField(q,'hint')}</div> : null}
-      {showError ? <div className="q-error">{t('static.required','Please answer this question to continue.')}</div> : null}
-      {q.type === 'radio' ? (
-        <div className="options">
-          {(q.opts || []).map((o,index) => (
-            <div key={o.v} className={`opt${saved === o.v ? ' sel' : ''}`} onClick={() => pickRadio(q.id,o.v)}>
-              <div className="opt-dot"></div>
-              <span className="opt-label">
-                {translateOptionLabel(q.id,index,o.l)}
-                {o.s ? <span className="opt-sub">{translateOptionSub(q.id,index,o.s)}</span> : null}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {q.type === 'checkbox' ? (
-        <>
-          <div className="multi-hint">{t('static.multiHint','Select all that apply')}</div>
-          <div className="options">
-            {(q.opts || []).map((o,index) => {
-              const arr = saved || [];
-              return (
-                <div key={o.v} className={`opt chk${arr.includes(o.v) ? ' sel' : ''}`} onClick={() => toggleChk(q.id,o.v)}>
-                  <div className="opt-dot"></div>
-                  <span className="opt-label">{translateOptionLabel(q.id,index,o.l)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      ) : null}
-      {q.type === 'number' ? (
-        <>
-          <input
-            type="number"
-            id={`num_${q.id}`}
-            value={saved || ''}
-            placeholder="Enter number"
-            min={q.var && FIELD_RULES[q.var] ? FIELD_RULES[q.var].min : 0}
-            max={q.var && FIELD_RULES[q.var] ? FIELD_RULES[q.var].max : undefined}
-            onInput={(event) => updateNumber(q.id, event.currentTarget.value)}
-          />
-          <div id={`val_err_${q.id}`} className="q-error" style={{display: valErr ? '' : 'none'}}>{valErr || ''}</div>
-        </>
-      ) : null}
-      {q.type === 'select' ? (
-        <select id={`sel_${q.id}`} value={saved || ''} onChange={(event) => updateSelect(q.id, event.currentTarget.value)}>
-          <option value="">{t('static.selectPlaceholder','— Select district —')}</option>
-          {(q.opts || []).map((o,index) => <option key={o.v} value={o.v}>{translateOptionLabel(q.id,index,o.l)}</option>)}
-        </select>
-      ) : null}
-      <div className="nav">
-        {history.length > 0 ? <button className="btn btn-back" onClick={goBack}>{t('static.buttons.back','← Back')}</button> : null}
-        <button className="btn btn-next" id="btnNext" onClick={handleNext}>{t('static.buttons.next','Next →')}</button>
-      </div>
-    </div>
-  );
-}
-
-function ConfirmCard({t, history, goBack, submitSurvey, submitting, developerMode, exportJSON, exportCSV, previewVisible, setPreviewVisible, previewData}) {
+function ConfirmCard({
+  t,
+  history,
+  goBack,
+  submitSurvey,
+  submitting,
+  developerMode,
+  exportJSON,
+  exportCSV,
+  previewVisible,
+  setPreviewVisible,
+  previewData,
+  finalReviewSections,
+  answers,
+  translateQField,
+  translateOptionLabel,
+  onEdit
+}) {
   return (
     <div className="confirm-card">
       <h2>{t('static.confirmTitle','Almost there — please review and submit')}</h2>
       <p>{t('static.confirmBody','You have completed all the survey questions. Your responses help us understand youth transitions in Sri Lanka and improve NYSC programmes for young people.')}</p>
+      <FinalReview
+        title="Review answers"
+        sections={finalReviewSections}
+        answers={answers}
+        translateQField={translateQField}
+        translateOptionLabel={translateOptionLabel}
+        t={t}
+        readOnly={false}
+        onEdit={onEdit}
+      />
       <div className="nav" style={{gap:12, marginBottom:24}}>
         {history.length > 0 ? <button className="btn btn-back" onClick={goBack}>{t('static.buttons.back','← Back')}</button> : null}
         <button className="btn-submit" id="btnSubmit" disabled={submitting} onClick={submitSurvey}>{submitting ? t('static.submitting','Submitting…') : t('static.confirmCta','Submit My Responses →')}</button>
@@ -592,13 +866,74 @@ function ConfirmCard({t, history, goBack, submitSurvey, submitting, developerMod
   );
 }
 
-function ThankYou({t, developerMode, exportJSON, exportCSV}) {
+function formatReviewAnswer(question, answers, translateOptionLabel) {
+  const value = answers[question.id];
+  if(value === undefined || value === '' || (Array.isArray(value) && value.length === 0)){
+    return 'Not answered';
+  }
+  if(question.type === 'checkbox'){
+    return (Array.isArray(value) ? value : []).map(v => {
+      const index = (question.opts || []).findIndex(o => o.v === v);
+      const opt = index >= 0 ? question.opts[index] : null;
+      return opt ? translateOptionLabel(question.id, index, opt.l) : v;
+    }).join(', ');
+  }
+  if(question.type === 'radio' || question.type === 'select'){
+    const index = (question.opts || []).findIndex(o => o.v === value);
+    const opt = index >= 0 ? question.opts[index] : null;
+    return opt ? translateOptionLabel(question.id, index, opt.l) : value;
+  }
+  return String(value);
+}
+
+function FinalReview({title, sections, answers, translateQField, translateOptionLabel, t, readOnly, onEdit}) {
+  return (
+    <div className="final-review">
+      <h3>{title}</h3>
+      {sections.length === 0 ? (
+        <p className="review-empty">{t('static.noReviewAnswers','No answered questions in this section yet.')}</p>
+      ) : (
+        sections.map((group, index) => (
+          <details className="final-review-section" key={group.section} open={index === 0}>
+            <summary>{group.label}</summary>
+            <div className="review-list">
+              {group.questions.map(question => (
+                <div className="review-item" key={question.id}>
+                  <div className="review-question">
+                    <span className="q-id">{question.id}</span>
+                    <span>{translateQField(question, 'text')}</span>
+                  </div>
+                  <div className="review-answer">{formatReviewAnswer(question, answers, translateOptionLabel)}</div>
+                  {!readOnly ? (
+                    <button className="btn btn-back review-edit" onClick={() => onEdit(question.id)}>{t('static.buttons.edit','Edit')}</button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </details>
+        ))
+      )}
+    </div>
+  );
+}
+
+function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections, answers, translateQField, translateOptionLabel}) {
   return (
     <div className="thankyou-card">
       <div className="ty-check">✓</div>
-      <h1>{t('static.thankYouTitle','Survey Complete')}</h1>
+      <h1>Submitted successfully</h1>
+      <p style={{fontSize:14,color:'var(--positive)',fontWeight:700,marginBottom:12}}>{t('static.thankYouTitle','Survey Complete')}</p>
       <p>{t('static.thankYouBody','Thank you for participating. Your responses contribute to research on youth labour market transitions in Sri Lanka and will help NYSC design better programmes for young people.')}</p>
       <p style={{fontSize:14,color:'var(--dim)'}}>Your response has been recorded. You may now close this page.</p>
+      <FinalReview
+        title="Review answers"
+        sections={finalReviewSections}
+        answers={answers}
+        translateQField={translateQField}
+        translateOptionLabel={translateOptionLabel}
+        t={t}
+        readOnly
+      />
       {developerMode ? (
         <div style={{marginTop:28,borderTop:'1px solid var(--border)',paddingTop:20}}>
           <div className="export-row" style={{justifyContent:'center'}}>
