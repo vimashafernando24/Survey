@@ -138,8 +138,8 @@ select option { background:var(--surface); }
 .thankyou-card p { color:var(--muted); font-size:15px; line-height:1.8; margin-bottom:24px; max-width:540px; margin-left:auto; margin-right:auto; }
 
 @media (max-width: 768px) {
-  /* Topbar: auto height, allow natural wrapping */
-  .topbar { height:auto; min-height:50px; padding:12px 14px; gap:8px; flex-wrap:wrap; overflow:visible;
+  /* Topbar: stay visible on mobile without covering the survey content */
+  .topbar { position:sticky; height:auto; min-height:50px; padding:12px 14px; gap:8px; flex-wrap:wrap; overflow:visible;
             justify-content:flex-start; text-align:left; align-items:center; }
   .logo { font-size:15px; flex-shrink:0; }
   /* Show section label but hide long progress note */
@@ -150,7 +150,7 @@ select option { background:var(--surface); }
   .lang-switcher { margin-left:auto; gap:3px; flex-shrink:0; }
   .lang-btn { font-size:11px; padding:3px 7px; }
 
-  /* Progress bar positioned below topbar */
+  /* Progress bar remains in the document flow below the topbar */
   .prog-outer { top:auto; position:relative; }
 
   /* Content starts after header and progress bar */
