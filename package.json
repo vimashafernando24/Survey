@@ -4,9 +4,16 @@
   "description": "Backend for NYSC Youth Transition Survey",
   "main": "server.js",
   "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
     "start": "node server.js"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.12",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "express": "^4.18.2",
     "mongodb": "^6.3.0",
     "cors": "^2.8.5",

@@ -10,11 +10,7 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve the survey frontend
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'nysc_swts_survey.html'));
-});
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // MongoDB connection
 let db;
@@ -59,6 +55,11 @@ app.post('/api/responses', async (req, res) => {
     console.error('Error saving response:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Serve the React frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Start server
