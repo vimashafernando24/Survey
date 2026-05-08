@@ -13,12 +13,17 @@ import QuestionCard from './components/QuestionCard.jsx';
 import SectionChips from './components/SectionChips.jsx';
 import SectionReview from './components/SectionReview.jsx';
 import Sidebar from './components/Sidebar.jsx';
+import ResearchRabbitGuide from './components/ResearchRabbitGuide.jsx';
+import { ResearchFoundationsPage, ResearchNav } from './components/ResearchFoundationsPage.jsx';
+import { insightData, researchPages } from './insightData.js';
+import introRabbit from './assets/mascots/rabbit1.png';
+import sectionRabbit from './assets/mascots/rabbit2.png';
 import './styles.css';
 
-const DRAFT_KEY = 'nysc_swts_v1';
+const DRAFT_KEY = 'nysc_swts_v2';
 const enableApiSubmit = true;
 const developerMode = false;
-const SEC_EST = {A:1,B:22,C:22,D:14,E:29,F:55,G:10,END:0};
+const SEC_EST = {INTRO:1,A:22,B:22,C:14,D:29,E:55,F:10,END:0};
 
 function readPath(obj, path) {
   return path.split('.').reduce((value, key) => {
@@ -58,6 +63,8 @@ function App() {
   const [reviewMode, setReviewMode] = useState(null);
   const [reviewEditContext, setReviewEditContext] = useState(null);
   const [savedFeedback, setSavedFeedback] = useState(false);
+  const [activeResearchPage, setActiveResearchPage] = useState(null);
+  const [dismissedInsights, setDismissedInsights] = useState(() => new Set());
 
   const q = getQ(currentId);
 
@@ -132,26 +139,26 @@ function App() {
   };
 
   const getBranchSection = (answerSet = answers) => {
-    switch(answerSet.C20){
-      case 'education': return 'D';
+    switch(answerSet.B20){
+      case 'education': return 'C';
       case 'unemployed':
-      case 'finished_plan_look': return 'E';
+      case 'finished_plan_look': return 'D';
       case 'working':
       case 'finished_plan_work':
-      case 'temp_absent': return 'F';
+      case 'temp_absent': return 'E';
       case 'home_duties':
-      case 'other_inactive': return 'G';
-      default: return answerSet.C20 ? 'G' : null;
+      case 'other_inactive': return 'F';
+      default: return answerSet.B20 ? 'F' : null;
     }
   };
 
   const getVisibleSections = (answerSet = answers) => {
-    return ['A','B','C','D','E','F','G','END'];
+    return ['INTRO','A','B','C','D','E','F','END'];
   };
 
   const getPathSections = (answerSet = answers) => {
     const branchSec = getBranchSection(answerSet);
-    return branchSec ? ['A','B','C',branchSec,'END'] : ['A','B','C','END'];
+    return branchSec ? ['INTRO','A','B',branchSec,'END'] : ['INTRO','A','B','END'];
   };
 
   const isAnswerPresent = (question, answerSet = answers) => {
@@ -199,7 +206,7 @@ function App() {
   };
 
   const isSectionComplete = (sec, answerSet = answers, pathSections = getPathSections(answerSet)) => {
-    if(sec === 'A') return false;
+    if(sec === 'INTRO') return false;
     if(!pathSections.includes(sec)) return false;
     if(sec === 'END') return submitted;
     const requiredQuestions = getRequiredSectionQuestions(sec, answerSet);
@@ -213,7 +220,7 @@ function App() {
   const getSectionStates = (visibleSections, activeSec) => {
     const branchSec = getBranchSection();
     const pathSections = getPathSections();
-    const branchSections = new Set(['D','E','F','G']);
+    const branchSections = new Set(['C','D','E','F']);
     return visibleSections.reduce((states, sec) => {
       const pathIndex = pathSections.indexOf(sec);
       const isBranch = branchSections.has(sec);
@@ -253,6 +260,7 @@ function App() {
     if(!nextId) return;
     const nextQuestion = getQ(nextId);
     if(!nextQuestion) return;
+    setActiveResearchPage(null);
     if(shouldSkip(nextQuestion, answerSet)){
       const further = getNext(nextQuestion, answerSet);
       if(further) goTo(further, answerSet, historySet, lang);
@@ -272,6 +280,7 @@ function App() {
 
   const goBack = () => {
     if(history.length === 0) return;
+    setActiveResearchPage(null);
     const nextHistory = history.slice(0, -1);
     const nextId = history[history.length - 1];
     setValidationAttempted(false);
@@ -286,6 +295,7 @@ function App() {
   };
 
   const openSectionReview = (section) => {
+    setActiveResearchPage(null);
     setReviewMode({type:'section', section});
     setReviewEditContext(null);
     setValidationAttempted(false);
@@ -294,6 +304,7 @@ function App() {
   };
 
   const closeReview = () => {
+    setActiveResearchPage(null);
     setReviewMode(null);
     setReviewEditContext(null);
     setValidationAttempted(false);
@@ -351,6 +362,7 @@ function App() {
     setCurrentId(qId);
     if(!submitted) setSubmitted(false);
     setPreviewVisible(false);
+    setActiveResearchPage(null);
   };
 
   const validateCurrentQuestion = () => {
@@ -442,12 +454,6 @@ function App() {
     return Math.min(97, Math.round((done / Math.max(total, 1)) * 100));
   };
 
-  const getProgressMessage = (pct) => {
-    if(pct < 30) return t('static.progressMsg1','This survey is anonymous academic research and takes about 15–25 minutes.');
-    if(pct < 70) return t('static.progressMsg2','You are making good progress — thank you for sharing your experience.');
-    return t('static.progressMsg3','Great work — you are almost finished.');
-  };
-
   const buildPathMetadata = (answerSet = answers) => {
     const activeBranch = getBranchSection(answerSet) || 'unknown';
     const activeSections = getPathSections(answerSet);
@@ -483,7 +489,7 @@ function App() {
     const out = {_meta:{
       timestamp:new Date().toISOString(),
       version:'SWTS+Bourdieu+SDT',
-      branch:answers.C20||'unknown',
+      branch:answers.B20||'unknown',
       frameworks:['SWTS','Bourdieu','SDT'],
       ...buildPathMetadata(answers)
     }};
@@ -570,6 +576,7 @@ function App() {
     setShowResume(false);
     setReviewMode(null);
     setReviewEditContext(null);
+    setActiveResearchPage(null);
   };
 
   const startFresh = () => {
@@ -584,6 +591,28 @@ function App() {
     setSubmitting(false);
     setReviewMode(null);
     setReviewEditContext(null);
+    setActiveResearchPage(null);
+  };
+
+  const openResearchPage = (pageId) => {
+    setActiveResearchPage(pageId);
+    setReviewMode(null);
+    setReviewEditContext(null);
+    setValidationAttempted(false);
+    setFieldTouched(false);
+    setPreviewVisible(false);
+  };
+
+  const closeResearchPage = () => {
+    setActiveResearchPage(null);
+  };
+
+  const dismissInsight = (questionId) => {
+    setDismissedInsights(prev => {
+      const next = new Set(prev);
+      next.add(questionId);
+      return next;
+    });
   };
 
   const getSectionReviewQuestions = (section) => (
@@ -602,7 +631,7 @@ function App() {
 
   const getFinalReviewSections = () => {
     const path = getPathSections().filter(s => s !== 'END');
-    const offPath = ['D','E','F','G'].filter(s =>
+    const offPath = ['C','D','E','F'].filter(s =>
       !path.includes(s) && Q.some(q => q.sec === s && q.var && hasStoredAnswer(q))
     );
     return [...path, ...offPath]
@@ -619,7 +648,7 @@ function App() {
 
   // Chips for current section — only during normal question flow
   let sectionChips = null;
-  if (!reviewMode && !reviewEditContext && q?.sec && q.sec !== 'A' && q.sec !== 'END') {
+  if (!reviewMode && !reviewEditContext && q?.sec && q.sec !== 'INTRO' && q.sec !== 'END') {
     const chipSec = q.sec;
     const rawChips = Q.filter(question =>
       question.sec === chipSec &&
@@ -636,7 +665,10 @@ function App() {
   }
 
   const hasSurveyStarted = history.length > 0;
-  const topSec = reviewMode?.type === 'section'
+  const activeResearchMeta = researchPages.find(page => page.id === activeResearchPage);
+  const topSec = activeResearchPage
+    ? (activeResearchMeta?.title || 'Research foundation')
+    : reviewMode?.type === 'section'
     ? getSectionLabel(reviewMode.section)
     : (q ? getSectionLabel(q.sec) : '');
   const previewData = useMemo(() => JSON.stringify(buildData(), null, 2), [answers, currentLang]);
@@ -644,13 +676,22 @@ function App() {
     ? getQ(reviewEditContext.progressId)?.sec
     : (submitted ? 'END' : q?.sec);
   const sectionStates = getSectionStates(visibleSections, navCurrentSec);
-  const isBranchDivider = !!answers.C20 && q?.type === 'divider' && ['D','E','F','G'].includes(q.sec);
+  const isBranchDivider = !!answers.B20 && q?.type === 'divider' && ['C','D','E','F'].includes(q.sec);
   const reviewQuestions = getReviewQuestions();
   const reviewTitle = t('static.reviewAnswers','Review answers');
   const reviewEyebrow = reviewMode?.type === 'section'
     ? getSectionLabel(reviewMode.section)
     : t('static.logo','Youth Transition Survey');
   const finalReviewSections = getFinalReviewSections();
+  const currentInsight = q &&
+    !activeResearchPage &&
+    !reviewMode &&
+    !reviewEditContext &&
+    insightData[q.id] &&
+    hasStoredAnswer(q) &&
+    !dismissedInsights.has(q.id)
+      ? insightData[q.id]
+      : null;
 
   return (
     <>
@@ -658,7 +699,6 @@ function App() {
         <span className="logo" id="logoText">{t('static.logo','Youth Transition Survey')}</span>
         <div className="top-controls">
           <span className="top-section" id="topSec">{topSec}</span>
-          <span id="topNote" className="top-note">{getProgressMessage(pct)}</span>
         </div>
         <span className="top-pct" id="topPct">{pct}% {t('static.complete','complete')}</span>
         <div className="lang-switcher">
@@ -678,6 +718,11 @@ function App() {
         getSectionLabel={getSectionLabel}
         onSectionClick={goToSection}
       />
+      <ResearchNav
+        activePageId={activeResearchPage}
+        onOpenPage={openResearchPage}
+        compact
+      />
 
       <div className="layout">
         <nav className="sidebar">
@@ -689,15 +734,16 @@ function App() {
             onSectionClick={goToSection}
           />
           <SectionChips chips={sectionChips} onChipClick={(qId) => goTo(qId)} />
-          <div className="legend">
-            <div className="leg-title">{t('static.frameworkKey','Framework Key')}</div>
-            <div className="leg-row"><span className="badge SWTS">SWTS</span><span className="leg-txt">ILO School-to-Work</span></div>
-            <div className="leg-row"><span className="badge Bourdieu">BOU</span><span className="leg-txt">Bourdieu Capital</span></div>
-            <div className="leg-row"><span className="badge SDT">SDT</span><span className="leg-txt">Self-Determination</span></div>
-          </div>
+          <ResearchNav activePageId={activeResearchPage} onOpenPage={openResearchPage} />
         </nav>
         <main className="main" id="mainArea">
-          {reviewMode ? (
+          {activeResearchPage ? (
+            <ResearchFoundationsPage
+              pageId={activeResearchPage}
+              onSelectPage={openResearchPage}
+              onBackToSurvey={closeResearchPage}
+            />
+          ) : reviewMode ? (
             <SectionReview
               title={reviewTitle}
               eyebrow={reviewEyebrow}
@@ -724,9 +770,9 @@ function App() {
               translateOptionLabel={translateOptionLabel}
             />
           ) : q?.type === 'info' ? (
-            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} hasSurveyStarted={hasSurveyStarted} onGoToProgress={goBack} />
+            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} hasSurveyStarted={hasSurveyStarted} onGoToProgress={goBack} mascotSrc={introRabbit} />
           ) : q?.type === 'divider' ? (
-            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} branchNotice={isBranchDivider} />
+            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} branchNotice={isBranchDivider} mascotSrc={sectionRabbit} />
           ) : q?.type === 'end' ? (
             <ConfirmCard
               t={t}
@@ -747,30 +793,38 @@ function App() {
               onEdit={editReviewQuestion}
             />
           ) : q ? (
-            <QuestionCard
-              q={q}
-              answers={answers}
-              history={history}
-              t={t}
-              getSectionLabel={getSectionLabel}
-              translateQField={translateQField}
-              translateOptionLabel={translateOptionLabel}
-              translateOptionSub={translateOptionSub}
-              getValidationError={getValidationError}
-              validationAttempted={validationAttempted}
-              fieldTouched={fieldTouched}
-              pickRadio={pickRadio}
-              toggleChk={toggleChk}
-              updateNumber={updateNumber}
-              updateSelect={updateSelect}
-              checkHasAnswer={checkHasAnswer}
-              handleNext={handleNext}
-              goBack={goBack}
-              reviewEditContext={reviewEditContext}
-              savedFeedback={savedFeedback}
-              onReturnToReview={() => returnFromReviewEdit('review')}
-              onReturnToProgress={() => returnFromReviewEdit('progress')}
-            />
+            <div className="question-stage">
+              <QuestionCard
+                q={q}
+                answers={answers}
+                history={history}
+                t={t}
+                getSectionLabel={getSectionLabel}
+                translateQField={translateQField}
+                translateOptionLabel={translateOptionLabel}
+                translateOptionSub={translateOptionSub}
+                getValidationError={getValidationError}
+                validationAttempted={validationAttempted}
+                fieldTouched={fieldTouched}
+                pickRadio={pickRadio}
+                toggleChk={toggleChk}
+                updateNumber={updateNumber}
+                updateSelect={updateSelect}
+                checkHasAnswer={checkHasAnswer}
+                handleNext={handleNext}
+                goBack={goBack}
+                reviewEditContext={reviewEditContext}
+                savedFeedback={savedFeedback}
+                onReturnToReview={() => returnFromReviewEdit('review')}
+                onReturnToProgress={() => returnFromReviewEdit('progress')}
+              />
+              <ResearchRabbitGuide
+                questionId={q.id}
+                insight={currentInsight}
+                onDismiss={() => dismissInsight(q.id)}
+                onLearnMore={() => openResearchPage(currentInsight.learnMorePage)}
+              />
+            </div>
           ) : null}
         </main>
       </div>
@@ -778,35 +832,59 @@ function App() {
   );
 }
 
-function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress}) {
+function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress, mascotSrc}) {
   return (
     <div className="info-card">
-      <div className="q-section">{getSectionLabel(q.sec)}</div>
-      <h1>{translateQField(q,'title')}</h1>
-      <div dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
-      <div className="nav" style={{marginTop:28}}>
-        {hasSurveyStarted ? (
-          <button className="btn btn-next" onClick={onGoToProgress}>Go to current progress →</button>
-        ) : (
-          <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Begin Survey →')}</button>
-        )}
+      <div className="intro-card-layout">
+        <div className="intro-copy">
+          {q.id === 'INTRO' ? (
+            <div className="intro-eyebrow">NYSC Sri Lanka · Research-driven survey</div>
+          ) : (
+            <div className="q-section">{getSectionLabel(q.sec)}</div>
+          )}
+          <h1>{translateQField(q,'title')}</h1>
+          <div className="intro-body" dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
+          <div className="nav intro-actions">
+            {hasSurveyStarted ? (
+              <button className="btn btn-next" onClick={onGoToProgress}>Go to current progress →</button>
+            ) : (
+              <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Begin Survey →')}</button>
+            )}
+          </div>
+        </div>
+        {mascotSrc ? (
+          <div className="mascot-stage intro-mascot-stage" aria-hidden="true">
+            <img className="page-mascot" src={mascotSrc} alt="" />
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice}) {
+function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice, mascotSrc}) {
   const next = getNext(q);
   const support = SECTION_SUPPORT[q.sec] || '';
   return (
     <>
       <div className="div-card">
-        <h2>{translateQField(q,'title')}</h2>
-        <p>{translateQField(q,'body')}</p>
-        {branchNotice ? (
-          <div className="branch-notice">Based on your answer, this is your survey path.</div>
-        ) : null}
-        {support ? <div className="sec-support">{support}</div> : null}
+        <div className="section-card-layout">
+          <div className="section-copy">
+            <div className="section-page-head">
+              <h2>{translateQField(q,'title')}</h2>
+            </div>
+            <p>{translateQField(q,'body')}</p>
+            {branchNotice ? (
+              <div className="branch-notice">Based on your answer, this is your survey path.</div>
+            ) : null}
+            {support ? <div className="sec-support">{support}</div> : null}
+          </div>
+          {mascotSrc ? (
+            <div className="mascot-stage section-mascot-stage" aria-hidden="true">
+              <img className="section-mascot" src={mascotSrc} alt="" />
+            </div>
+          ) : null}
+        </div>
       </div>
       <div className="nav">
         {history.length > 0 ? <button className="btn btn-back" onClick={goBack}>{t('static.buttons.back','← Back')}</button> : null}

@@ -33,13 +33,13 @@ const en = {
       startOver:'Start Over'
     },
     sections: {
-      A:'Introduction',
-      B:'Section A — Personal & Household',
-      C:'Section B — Education & Activity History',
-      D:'Section C — In Education',
-      E:'Section D — Unemployed / Seeking Work',
-      F:'Section E — Employed or Have a Job',
-      G:'Section F — Currently Outside the Labour Force',
+      INTRO:'Introduction',
+      A:'Section A — Personal & Household',
+      B:'Section B — Education & Activity History',
+      C:'Section C — In Education',
+      D:'Section D — Unemployed / Seeking Work',
+      E:'Section E — Employed or Have a Job',
+      F:'Section F — Currently Outside the Labour Force',
       END:'Complete'
     },
     questions: {}

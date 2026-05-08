@@ -1,10 +1,7 @@
 import React from 'react';
 import { FIELD_RULES } from '../surveyData.js';
+import { getFrameworkTheme } from '../data/frameworkTheme.js';
 import OptionCard from './OptionCard.jsx';
-
-function fwBadgeLabel(fw){
-  return fw === 'Bourdieu' ? 'BOU' : fw;
-}
 
 function QuestionCard(props) {
   const {
@@ -17,12 +14,22 @@ function QuestionCard(props) {
   const hasAnswer = checkHasAnswer(q);
   const showError = validationAttempted && !hasAnswer;
   const valErr = (validationAttempted || fieldTouched) ? getValidationError(q, saved) : null;
+  const frameworkTheme = getFrameworkTheme(q.fw);
 
   return (
     <div className="card">
       <div className="q-meta">
         <span className="q-id">{q.id}</span>
-        <span className={`badge ${q.fw}`}>{fwBadgeLabel(q.fw)}</span>
+        <span
+          className="badge framework-badge"
+          style={{
+            '--framework-color': frameworkTheme.color,
+            '--framework-bg': frameworkTheme.bg,
+            '--framework-border': frameworkTheme.border
+          }}
+        >
+          {frameworkTheme.label}
+        </span>
         <span className="q-section">{getSectionLabel(q.sec)}</span>
       </div>
       <div className="q-text">{translateQField(q,'text')}</div>

@@ -1,14 +1,14 @@
 const SECTIONS_META = {
-  A:{label:'Introduction'},
-  B:{label:'Section A — Personal & Household'},
-  C:{label:'Section B — Education & Activity History'},
-  D:{label:'Section C — In Education'},
-  E:{label:'Section D — Unemployed / Seeking Work'},
-  F:{label:'Section E — Employed or Have a Job'},
-  G:{label:'Section F — Currently Outside the Labour Force'},
+  INTRO:{label:'Introduction'},
+  A:{label:'Section A — Personal & Household'},
+  B:{label:'Section B — Education & Activity History'},
+  C:{label:'Section C — In Education'},
+  D:{label:'Section D — Unemployed / Seeking Work'},
+  E:{label:'Section E — Employed or Have a Job'},
+  F:{label:'Section F — Currently Outside the Labour Force'},
   END:{label:'Complete'}
 };
-const SEC_ORDER = ['A','B','C','D','E','F','G','END'];
+const SEC_ORDER = ['INTRO','A','B','C','D','E','F','END'];
 
 export {
   SECTIONS_META,
