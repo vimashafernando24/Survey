@@ -37,11 +37,17 @@ function SectionReview({
     return String(value);
   };
 
+  // Parse "Section A — Personal & Household" → kicker + name for clean stacked display
+  const eyebrowMatch = (eyebrow || '').match(/^(Section\s+[A-Z])\s+—\s+(.+)$/);
+  const eyebrowKicker = eyebrowMatch ? eyebrowMatch[1].toUpperCase() : null;
+  const eyebrowName = eyebrowMatch ? eyebrowMatch[2] : null;
+
   return (
     <div className="section-review">
       <div className="review-head">
         <div>
-          <div className="q-section">{eyebrow}</div>
+          <div className="q-section">{eyebrowKicker || eyebrow}</div>
+          {eyebrowName ? <div className="review-eyebrow-name">{eyebrowName}</div> : null}
           <h2>{title}</h2>
         </div>
         {sectionTheme?.mascotImage ? (

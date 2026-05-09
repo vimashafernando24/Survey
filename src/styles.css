@@ -128,12 +128,15 @@ select option { background:var(--surface); }
 .div-card::after { content:''; position:absolute; right:86px; bottom:-92px; width:170px; height:170px; border-radius:50%; background:rgba(62,118,144,.07); z-index:0; }
 .div-card > * { position:relative; z-index:1; }
 .div-card h2 { font-family:'Instrument Serif',serif; font-size:30px; margin-bottom:14px; color:var(--text); }
+.div-section-kicker { font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--section-primary); font-weight:800; margin-bottom:10px; opacity:.9; }
 .div-card p { font-size:16px; color:var(--muted); line-height:1.78; }
 .info-card { width:100%; max-width:1240px; background:var(--surface); border:1px solid var(--border); border-radius:28px; padding:52px 60px; box-shadow:0 10px 30px rgba(31,27,22,.06); position:relative; overflow:hidden; }
 .info-card::before { content:''; position:absolute; right:-128px; top:-128px; width:360px; height:360px; border-radius:50%; background:rgba(210,141,70,.09); z-index:0; }
 .info-card::after { content:''; position:absolute; right:120px; bottom:-116px; width:230px; height:230px; border-radius:50%; background:rgba(62,118,144,.07); z-index:0; }
 .info-card > * { position:relative; z-index:1; }
 .info-card h1 { font-family:'Instrument Serif',serif; font-size:46px; color:var(--gold); margin-bottom:22px; line-height:1.16; }
+.intro-title-main { display:block; }
+.intro-title-sub { display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.40em; font-weight:700; color:var(--muted); margin-top:10px; letter-spacing:.04em; text-transform:uppercase; }
 .info-card p { font-size:17px; color:var(--muted); line-height:1.82; margin-bottom:18px; }
 .info-card ul { margin:16px 0 0 20px; color:var(--muted); }
 .info-card li { margin-bottom:10px; }
@@ -165,6 +168,7 @@ select option { background:var(--surface); }
 .section-review { width:100%; max-width:1020px; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:36px 44px; box-shadow:0 10px 30px rgba(31,27,22,.06); animation:fadeUp .28s ease; }
 .review-head { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:24px; }
 .review-head h2 { font-family:'Instrument Serif',serif; font-size:30px; color:var(--text); margin-top:4px; }
+.review-eyebrow-name { font-size:13px; color:var(--muted); font-weight:600; margin-top:2px; margin-bottom:6px; }
 .review-empty { color:var(--muted); line-height:1.7; }
 .review-list { display:flex; flex-direction:column; gap:14px; }
 .review-item { border:1px solid var(--border); border-radius:16px; padding:18px 20px; background:var(--surface2); }
@@ -669,12 +673,15 @@ input[type=number]:focus, select:focus, input[type=text]:focus {
 }
 .final-review-section summary::after {
   position:absolute;
-  right:1rem;
+  right:clamp(9rem, 18vw, 13.5rem);
   top:50%;
   transform:translateY(-50%);
   z-index:2;
 }
-.final-review-summary-copy { flex:1; min-width:0; padding-right:.75rem; }
+.final-review-summary-copy { flex:1; min-width:0; padding-right:.75rem; display:flex; flex-direction:column; gap:4px; }
+.final-review-kicker { font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--section-primary,var(--gold)); font-weight:800; opacity:.9; }
+.final-review-label-name { font-size:16px; font-weight:700; color:var(--text); }
+.review-summary-mascot { position:absolute; right:clamp(2.5rem, 5vw, 3.5rem); bottom:0; height:clamp(5.75rem, 10.5vw, 8.25rem); width:auto; object-fit:contain; object-position:bottom center; pointer-events:none; z-index:1; filter:drop-shadow(0 2px 8px rgba(31,27,22,.10)); }
 .final-review-section[open] summary { border-bottom-color:var(--border); }
 .final-review-section .review-list { background:#fff; }
 
@@ -697,6 +704,8 @@ input[type=number]:focus, select:focus, input[type=text]:focus {
     min-height:clamp(5.75rem, 24vw, 7.25rem);
     padding-right:clamp(6.5rem, 32vw, 8.25rem);
   }
+  .final-review-section summary::after { right:clamp(6.75rem, 33vw, 8.5rem); }
+  .review-summary-mascot { height:clamp(5rem, 22vw, 7rem); right:clamp(1rem, 3vw, 1.5rem); }
   .intro-card-layout, .section-card-layout, .research-page-head { grid-template-columns:1fr; }
   .intro-mascot-stage, .section-mascot-stage { min-height:210px; }
 }

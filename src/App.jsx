@@ -1112,6 +1112,14 @@ function App() {
 }
 
 function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress, sectionTheme, submitted}) {
+  const rawTitle = translateQField(q, 'title');
+  // Split "X — Y" into main + subtitle; for INTRO this is "Youth Transition Survey — NYSC Sri Lanka"
+  const dashIdx = rawTitle.indexOf(' — ');
+  const titleMain = dashIdx >= 0 ? rawTitle.slice(0, dashIdx) : rawTitle;
+  const titleSub = dashIdx >= 0 ? rawTitle.slice(dashIdx + 3) : null;
+  // For non-INTRO: parse "Section A — Name" into kicker + name
+  const secParts = q.id !== 'INTRO' ? splitDisplaySectionLabel(getSectionLabel(q.sec)) : null;
+
   return (
     <div className="info-card">
       <div className="intro-card-layout">
@@ -1119,9 +1127,15 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
           {q.id === 'INTRO' ? (
             <div className="intro-eyebrow">{t('static.introEyebrow','NYSC Sri Lanka · Research-driven survey')}</div>
           ) : (
-            <div className="q-section">{getSectionLabel(q.sec)}</div>
+            <>
+              {secParts?.kicker ? <div className="intro-eyebrow">{secParts.kicker}</div> : null}
+              {secParts?.title ? <div className="q-section" style={{marginBottom:8}}>{secParts.title}</div> : null}
+            </>
           )}
-          <h1>{translateQField(q,'title')}</h1>
+          <h1>
+            <span className="intro-title-main">{titleMain}</span>
+            {titleSub ? <span className="intro-title-sub">{titleSub}</span> : null}
+          </h1>
           <div className="intro-body" dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
           <div className="nav intro-actions">
             {submitted ? (
@@ -1147,13 +1161,17 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
 function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice, sectionTheme, submitted}) {
   const next = getNext(q);
   const support = q.sec ? t(`sectionSupport.${q.sec}`, SECTION_SUPPORT[q.sec] || '') : '';
+  const rawTitle = translateQField(q, 'title');
+  // Parse "Section A — Personal & Household" → kicker + clean name
+  const divParts = splitDisplaySectionLabel(rawTitle);
   return (
     <>
       <div className="div-card">
         <div className="section-card-layout">
           <div className="section-copy">
             <div className="section-page-head">
-              <h2>{translateQField(q,'title')}</h2>
+              {divParts.kicker ? <div className="div-section-kicker">{divParts.kicker}</div> : null}
+              <h2>{divParts.title || rawTitle}</h2>
             </div>
             <p>{translateQField(q,'body')}</p>
             {branchNotice ? (
@@ -1286,11 +1304,26 @@ function FinalReview({title, sections, answers, translateQField, translateOption
           <details
             className="final-review-section"
             key={group.section}
-            open={index === 0}
             style={getSectionTheme ? sectionThemeStyle(group.section) : undefined}
           >
             <summary>
-              <span className="final-review-summary-copy">{group.label}</span>
+              {(() => {
+                const parts = splitDisplaySectionLabel(group.label);
+                return (
+                  <span className="final-review-summary-copy">
+                    <span className="final-review-kicker">{parts.kicker}</span>
+                    <span className="final-review-label-name">{parts.title || group.label}</span>
+                  </span>
+                );
+              })()}
+              {getSectionTheme?.(group.section)?.mascotImage ? (
+                <img
+                  className="review-summary-mascot"
+                  src={getSectionTheme(group.section).mascotImage}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
             </summary>
             <div className="review-list">
               {group.questions.map(question => (
