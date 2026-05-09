@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FIELD_RULES,
   Q,
@@ -150,6 +150,8 @@ function App() {
   const [dismissedInsights, setDismissedInsights] = useState(() => new Set());
   const [pathChangeConfirm, setPathChangeConfirm] = useState(null);
 
+  const _browserNavRef = useRef(null);
+
   const q = getQ(currentId);
 
   useEffect(() => {
@@ -170,6 +172,32 @@ function App() {
     const timer = setTimeout(() => setSavedFeedback(false), 2500);
     return () => clearTimeout(timer);
   }, [savedFeedback]);
+
+  useEffect(() => {
+    // Tag the current history entry, then push one extra so popstate fires before leaving.
+    window.history.replaceState({ nysc: 0 }, '');
+    window.history.pushState({ nysc: 1 }, '');
+    const onPopState = () => {
+      const nav = _browserNavRef.current;
+      if (!nav) return;
+      let handled = false;
+      if (nav.pathChangeConfirm) {
+        nav.cancelPathChange(); handled = true;
+      } else if (nav.activeResearchPage) {
+        nav.closeResearchPage(); handled = true;
+      } else if (nav.reviewEditContext) {
+        nav.returnFromReviewEdit('review'); handled = true;
+      } else if (nav.reviewMode) {
+        nav.closeReview(); handled = true;
+      } else if (nav.history.length > 0 && !nav.submitted) {
+        nav.goBack(); handled = true;
+      }
+      // If not handled (first screen / post-submit) let the browser navigate away.
+      if (handled) window.history.pushState({ nysc: 1 }, '');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const t = (path, fallback) => {
     let value = readPath(translations[currentLang], path);
@@ -949,6 +977,22 @@ function App() {
     !dismissedInsights.has(q.id)
       ? translateInsight(q.id, insightData[q.id])
       : null;
+
+  // Keep ref in sync with latest state and actions so the popstate handler
+  // always calls the current-render versions without re-registering the listener.
+  _browserNavRef.current = {
+    history,
+    submitted,
+    pathChangeConfirm,
+    activeResearchPage,
+    reviewMode,
+    reviewEditContext,
+    cancelPathChange,
+    closeResearchPage,
+    returnFromReviewEdit,
+    closeReview,
+    goBack,
+  };
 
   return (
     <div className="survey-shell" style={activeThemeStyle}>
