@@ -25,6 +25,12 @@ const CONTRACT = [
   {v:'5',l:'Written contract — permanent/unlimited'},{v:'6',l:'Written contract — temporary (12–36 months)'},
   {v:'7',l:'Written contract — temporary (under 12 months)'},{v:'8',l:'Do not know'}
 ];
+const SATISFACTION = [
+  {v:'1',l:'Very satisfied'},
+  {v:'2',l:'Somewhat satisfied'},
+  {v:'3',l:'Somewhat unsatisfied'},
+  {v:'4',l:'Very unsatisfied'}
+];
 const SEARCH = [
   {v:'1',l:'Through education or training institution'},{v:'2',l:'Attending job fairs'},
   {v:'3',l:'Public employment office registration'},{v:'4',l:'Private employment agency'},
@@ -61,6 +67,7 @@ export {
   OCC,
   DISTRICTS,
   CONTRACT,
+  SATISFACTION,
   SEARCH,
   OBSTACLE,
   TRAINING_T,

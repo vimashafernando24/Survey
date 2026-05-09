@@ -10,13 +10,14 @@ function Sidebar({visibleSections, sectionStates, getSectionLabel, onSectionClic
         const notApplicable = !!state.notApplicable;
         const selectedBranch = !!state.selectedBranch;
         const available = !!state.available;
+        const offPath = !!state.offPathWithAnswers;
 
         return (
           <button
             key={s}
-            className={`sb-item${active ? ' active' : ''}${done ? ' done' : ''}${available ? ' available' : ''}${isLocked ? ' locked' : ''}${notApplicable ? ' not-path' : ''}${selectedBranch ? ' your-path' : ''}`}
-            onClick={() => onSectionClick(s, { completed: done, active, locked: isLocked, notApplicable, available })}
-            disabled={isLocked || notApplicable}
+            className={`sb-item${active ? ' active' : ''}${done ? ' done' : ''}${available ? ' available' : ''}${isLocked ? ' locked' : ''}${notApplicable ? ' not-path' : ''}${selectedBranch ? ' your-path' : ''}${offPath ? ' prev-path' : ''}`}
+            onClick={() => onSectionClick(s, { completed: done, active, locked: isLocked, notApplicable, available, offPathWithAnswers: offPath })}
+            disabled={isLocked || notApplicable || offPath}
             title={isLocked && !notApplicable ? 'Complete earlier sections to unlock' : ''}
           >
             <div className="sb-dot" aria-hidden="true">

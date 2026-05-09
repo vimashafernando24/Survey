@@ -37,6 +37,9 @@ button, input, select { max-width:100%; }
 .sb-item.not-path { opacity:.55; cursor:not-allowed; }
 .sb-item.not-path .sb-dot { background:var(--dim); opacity:.45; }
 .sb-item.not-path .sb-label { color:var(--dim); }
+.sb-item.prev-path { opacity:.48; cursor:default; }
+.sb-item.prev-path .sb-dot { background:var(--dim); opacity:.35; }
+.sb-item.prev-path .sb-label { color:var(--dim); }
 .sb-item.available:not(.active) { border:1px solid rgba(93,138,86,.24); background:rgba(93,138,86,.06); }
 .sb-item.your-path:not(.active) { border:1px solid rgba(93,138,86,.28); background:rgba(93,138,86,.08); }
 .sb-item.your-path .sb-dot { background:var(--positive); }
@@ -290,6 +293,7 @@ select option { background:var(--surface); }
   .mobile-sec-btn.active { background:var(--gold); border-color:var(--gold); color:#fff; }
   .mobile-sec-btn.locked { opacity:.45; }
   .mobile-sec-btn.not-path { opacity:.42; text-decoration:line-through; }
+  .mobile-sec-btn.prev-path { opacity:.38; cursor:default; }
   .mobile-sec-btn.your-path:not(.active) { border-color:rgba(93,138,86,.42); color:var(--positive); background:rgba(93,138,86,.08); }
   .mobile-lock { width:8px; height:7px; border:1.4px solid currentColor; border-radius:2px; position:relative; display:inline-block; }
   .mobile-lock::before { content:''; position:absolute; left:1px; right:1px; top:-6px; height:6px; border:1.4px solid currentColor; border-bottom:0; border-radius:6px 6px 0 0; }
@@ -442,6 +446,13 @@ select option { background:var(--surface); }
 
 /* Bubble must not overflow on narrow screens */
 .research-bubble { max-width:calc(100vw - 2rem); }
+
+/* Path change confirmation modal */
+.path-change-overlay { position:fixed; inset:0; background:rgba(0,0,0,.46); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; }
+.path-change-modal { background:#fff; border-radius:16px; padding:28px 28px 24px; max-width:420px; width:100%; box-shadow:0 8px 40px rgba(0,0,0,.16); }
+.path-change-notice { font-weight:700; font-size:16px; margin:0 0 10px; color:var(--text); }
+.path-change-body { color:var(--muted); font-size:14px; line-height:1.65; margin:0 0 22px; }
+.path-change-actions { display:flex; gap:10px; flex-wrap:wrap; }
 
 @media (max-width: 640px) {
   .research-section-grid { grid-template-columns:1fr; }

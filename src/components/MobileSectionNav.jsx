@@ -10,13 +10,14 @@ function MobileSectionNav({visibleSections, sectionStates, getSectionLabel, onSe
         const notApplicable = !!state.notApplicable;
         const selectedBranch = !!state.selectedBranch;
         const available = !!state.available;
+        const offPath = !!state.offPathWithAnswers;
 
         return (
           <button
             key={s}
-            className={`mobile-sec-btn${active ? ' active' : ''}${done ? ' done' : ''}${available ? ' available' : ''}${isLocked ? ' locked' : ''}${notApplicable ? ' not-path' : ''}${selectedBranch ? ' your-path' : ''}`}
-            onClick={() => onSectionClick(s, { completed: done, active, locked: isLocked, notApplicable, available })}
-            disabled={isLocked || notApplicable}
+            className={`mobile-sec-btn${active ? ' active' : ''}${done ? ' done' : ''}${available ? ' available' : ''}${isLocked ? ' locked' : ''}${notApplicable ? ' not-path' : ''}${selectedBranch ? ' your-path' : ''}${offPath ? ' prev-path' : ''}`}
+            onClick={() => onSectionClick(s, { completed: done, active, locked: isLocked, notApplicable, available, offPathWithAnswers: offPath })}
+            disabled={isLocked || notApplicable || offPath}
             title={selectedBranch ? `${getSectionLabel(s)} — Your survey path` : (notApplicable ? '' : getSectionLabel(s))}
           >
             <span>{s}</span>

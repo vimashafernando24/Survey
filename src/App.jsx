@@ -21,6 +21,7 @@ import sectionRabbit from './assets/mascots/rabbit2.png';
 import './styles.css';
 
 const DRAFT_KEY = 'nysc_swts_v2';
+const SESSION_KEY = 'nysc_swts_session_id';
 const enableApiSubmit = true;
 const developerMode = false;
 const SEC_EST = {INTRO:1,A:22,B:22,C:14,D:29,E:55,F:10,END:0};
@@ -46,7 +47,83 @@ function clearDraft(){
   try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
 }
 
+function getSessionId(){
+  try {
+    let id = localStorage.getItem(SESSION_KEY);
+    if(!id){
+      const random = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      id = `nysc-${random}`;
+      localStorage.setItem(SESSION_KEY, id);
+    }
+    return id;
+  } catch(e){
+    return `nysc-${Date.now()}`;
+  }
+}
+
 function getQ(id){ return Q.find(q=>q.id===id); }
+
+function isAnswerableQuestion(question) {
+  return ['radio','select','number','checkbox'].includes(question.type);
+}
+
+function hasAnswerValue(question, answerSet) {
+  const value = answerSet[question.id];
+  if(question.type === 'radio' || question.type === 'select') return !!value;
+  if(question.type === 'number') return value !== undefined && value !== '';
+  if(question.type === 'checkbox') return Array.isArray(value) && value.length > 0;
+  return true;
+}
+
+// Walk the question graph and return question IDs that are reachable and not skipped.
+function computeActivePathIds(answerSet) {
+  const active = [];
+  let id = 'INTRO';
+  const vis = new Set();
+  while (id && !vis.has(id)) {
+    vis.add(id);
+    const q = getQ(id);
+    if (!q) break;
+    const skipped = q.skip && q.skip(answerSet);
+    if (!skipped) {
+      active.push(id);
+      if (q.type === 'end') break;
+      if (isAnswerableQuestion(q) && !hasAnswerValue(q, answerSet)) break;
+    }
+    if (!q.next) break;
+    id = typeof q.next === 'function' ? q.next(answerSet) : q.next;
+  }
+  return active;
+}
+
+function computeActivePath(answerSet) {
+  return new Set(computeActivePathIds(answerSet));
+}
+
+// Walk the graph and return the first unanswered question ID plus the history array up to it.
+function computePathAndFirstUnanswered(answerSet) {
+  const hist = [];
+  let id = 'INTRO';
+  const vis = new Set();
+  while (id && !vis.has(id)) {
+    vis.add(id);
+    const q = getQ(id);
+    if (!q) break;
+    const skipped = q.skip && q.skip(answerSet);
+    if (!skipped) {
+      if (q.type === 'end') return { firstUnanswered: q.id, history: hist };
+      if (q.type !== 'info' && q.type !== 'divider') {
+        if (!hasAnswerValue(q, answerSet)) return { firstUnanswered: id, history: hist };
+      }
+      hist.push(id);
+    }
+    if (!q.next) break;
+    id = typeof q.next === 'function' ? q.next(answerSet) : q.next;
+  }
+  return { firstUnanswered: 'END_SCREEN', history: hist };
+}
 
 function App() {
   const [currentLang, setCurrentLang] = useState('en');
@@ -65,6 +142,7 @@ function App() {
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [activeResearchPage, setActiveResearchPage] = useState(null);
   const [dismissedInsights, setDismissedInsights] = useState(() => new Set());
+  const [pathChangeConfirm, setPathChangeConfirm] = useState(null);
 
   const q = getQ(currentId);
 
@@ -157,16 +235,17 @@ function App() {
   };
 
   const getPathSections = (answerSet = answers) => {
-    const branchSec = getBranchSection(answerSet);
-    return branchSec ? ['INTRO','A','B',branchSec,'END'] : ['INTRO','A','B','END'];
+    const activePathIds = computeActivePathIds(answerSet);
+    const sections = [];
+    activePathIds.forEach(id => {
+      const question = getQ(id);
+      if(question.sec && !sections.includes(question.sec)) sections.push(question.sec);
+    });
+    return sections.length ? sections : ['INTRO'];
   };
 
   const isAnswerPresent = (question, answerSet = answers) => {
-    const value = answerSet[question.id];
-    if(question.type === 'radio' || question.type === 'select') return !!value;
-    if(question.type === 'number') return value !== undefined && value !== '';
-    if(question.type === 'checkbox') return Array.isArray(value) && value.length > 0;
-    return true;
+    return hasAnswerValue(question, answerSet);
   };
 
   const hasStoredAnswer = (question, answerSet = answers) => {
@@ -218,31 +297,46 @@ function App() {
   };
 
   const getSectionStates = (visibleSections, activeSec) => {
-    const branchSec = getBranchSection();
     const pathSections = getPathSections();
     const branchSections = new Set(['C','D','E','F']);
+    const hasBranchAnswer = !!answers.B20;
     return visibleSections.reduce((states, sec) => {
+      // INTRO has no answerable questions — treat as done once the user has moved forward
+      if (sec === 'INTRO') {
+        states[sec] = {
+          active: activeSec === 'INTRO',
+          completed: history.length > 0,
+          available: false,
+          locked: false,
+          notApplicable: false,
+          offPathWithAnswers: false,
+          selectedBranch: false
+        };
+        return states;
+      }
       const pathIndex = pathSections.indexOf(sec);
       const isBranch = branchSections.has(sec);
       const onPath = pathIndex >= 0;
       const active = sec === activeSec;
       const hasAnswers = Q.some(q => q.sec === sec && q.var && hasStoredAnswer(q, answers));
-      // Include off-path sections (e.g. G reached via F→G re-routing) in completion check
-      const pathForCompletion = hasAnswers && !onPath ? [...pathSections, sec] : pathSections;
-      const completed = (onPath || hasAnswers) && isSectionComplete(sec, answers, pathForCompletion);
+      // Only sections on the current path can be marked complete
+      const completed = onPath && isSectionComplete(sec, answers, pathSections);
+      // INTRO is always considered "done" for the purpose of unlocking Section A
       const previousComplete = onPath && pathSections.slice(0, pathIndex).every(
-        pathSec => isSectionComplete(pathSec, answers, pathSections)
+        pathSec => pathSec === 'INTRO' || isSectionComplete(pathSec, answers, pathSections)
       );
       const available = onPath && !active && !completed && previousComplete;
-      // notApplicable only if truly off-path with no answers and not active
-      const notApplicable = !!branchSec && isBranch && sec !== branchSec && !active && !hasAnswers;
+      // Branch section that has stale answers from a previous path — show as muted, not navigable
+      const offPathWithAnswers = hasBranchAnswer && isBranch && !onPath && !active && hasAnswers;
+      const notApplicable = hasBranchAnswer && isBranch && !onPath && !active && !hasAnswers;
       states[sec] = {
         active,
         completed,
         available,
-        locked: !active && !completed && !available && !hasAnswers,
+        locked: !active && !completed && !available && !hasAnswers && !offPathWithAnswers,
         notApplicable,
-        selectedBranch: !!branchSec && (sec === branchSec || (isBranch && hasAnswers && !onPath))
+        offPathWithAnswers,
+        selectedBranch: hasBranchAnswer && isBranch && onPath
       };
       return states;
     }, {});
@@ -311,8 +405,29 @@ function App() {
     setFieldTouched(false);
   };
 
+  const openIntroPage = () => {
+    setActiveResearchPage(null);
+    setReviewMode(null);
+    setReviewEditContext(null);
+    setValidationAttempted(false);
+    setFieldTouched(false);
+    setPreviewVisible(false);
+
+    if(currentId === 'INTRO') return;
+
+    const nextHistory = [...history, currentId];
+    setHistory(nextHistory);
+    setCurrentId('INTRO');
+    saveDraft(answers, history, currentId, currentLang);
+  };
+
   const goToSection = (targetSec, sectionState = {}) => {
-    if(sectionState.locked || sectionState.notApplicable) return;
+    if(targetSec === 'INTRO') {
+      openIntroPage();
+      return;
+    }
+
+    if(sectionState.locked || sectionState.notApplicable || sectionState.offPathWithAnswers) return;
 
     // During edit-from-review: clicking the progress section returns to saved progress
     if(reviewEditContext) {
@@ -353,7 +468,8 @@ function App() {
     setReviewEditContext({
       reviewMode,
       progressId: currentId,
-      progressHistory: history
+      progressHistory: history,
+      answersSnapshot: { ...answers }
     });
     setReviewMode(null);
     setValidationAttempted(false);
@@ -384,6 +500,17 @@ function App() {
 
   const returnFromReviewEdit = (destination) => {
     if(!reviewEditContext || !validateCurrentQuestion()) return;
+
+    const snapshot = reviewEditContext.answersSnapshot;
+    if (snapshot) {
+      const getSecs = path => new Set([...path].map(id => getQ(id)?.sec).filter(s => s && s !== 'INTRO' && s !== 'END'));
+      const oldSecs = getSecs(computeActivePath(snapshot));
+      const newSecs = getSecs(computeActivePath(answers));
+      let pathChanged = oldSecs.size !== newSecs.size;
+      if (!pathChanged) { for (const s of oldSecs) if (!newSecs.has(s)) { pathChanged = true; break; } }
+      if (pathChanged) { setPathChangeConfirm({ destination }); return; }
+    }
+
     const progressId = reviewEditContext.progressId;
     const progressHistory = reviewEditContext.progressHistory || [];
     setCurrentId(progressId);
@@ -397,6 +524,35 @@ function App() {
     setSavedFeedback(false);
     setPreviewVisible(false);
     saveDraft(answers, progressHistory, progressId, currentLang);
+  };
+
+  const confirmPathChange = () => {
+    const { firstUnanswered, history: newHistory } = computePathAndFirstUnanswered(answers);
+    setPathChangeConfirm(null);
+    setCurrentId(firstUnanswered);
+    setHistory(newHistory);
+    setReviewMode(null);
+    setReviewEditContext(null);
+    setSavedFeedback(false);
+    setPreviewVisible(false);
+    saveDraft(answers, newHistory, firstUnanswered, currentLang);
+  };
+
+  const cancelPathChange = () => {
+    const ctx = reviewEditContext;
+    const dest = pathChangeConfirm?.destination;
+    const snapshot = ctx?.answersSnapshot;
+    const progressId = ctx?.progressId;
+    const progressHistory = ctx?.progressHistory || [];
+    setPathChangeConfirm(null);
+    if (snapshot) setAnswers({ ...snapshot });
+    setCurrentId(progressId);
+    setHistory(progressHistory);
+    if (dest === 'review') { setReviewMode(ctx?.reviewMode || null); } else { setReviewMode(null); }
+    setReviewEditContext(null);
+    setSavedFeedback(false);
+    setPreviewVisible(false);
+    saveDraft(snapshot || answers, progressHistory, progressId, currentLang);
   };
 
   const checkHasAnswer = (question) => {
@@ -458,18 +614,15 @@ function App() {
     const activeBranch = getBranchSection(answerSet) || 'unknown';
     const activeSections = getPathSections(answerSet);
     const activeSectionSet = new Set(activeSections);
+    const activePath = computeActivePath(answerSet);
     const answeredQuestions = Q.filter(question => question.var && hasStoredAnswer(question, answerSet));
     const answeredSections = [...new Set(answeredQuestions.map(question => question.sec))];
     const offPathSections = answeredSections.filter(section => !activeSectionSet.has(section));
-    const activeQuestionIdSet = new Set();
-
-    activeSections.forEach(section => {
-      getRequiredSectionQuestions(section, answerSet).forEach(question => {
-        if(hasStoredAnswer(question, answerSet)){
-          activeQuestionIdSet.add(question.id);
-        }
-      });
-    });
+    const activeQuestionIdSet = new Set(
+      answeredQuestions
+        .filter(question => activePath.has(question.id))
+        .map(question => question.id)
+    );
 
     const offPathQuestionIds = answeredQuestions
       .filter(question => !activeQuestionIdSet.has(question.id))
@@ -481,19 +634,80 @@ function App() {
       answered_sections: answeredSections,
       off_path_sections: offPathSections,
       off_path_question_ids: offPathQuestionIds,
-      active_question_ids: [...activeQuestionIdSet]
+      active_question_ids: computeActivePathIds(answerSet).filter(id => activeQuestionIdSet.has(id))
     };
   };
 
   const buildData = () => {
+    const activePath = computeActivePath(answers);
+    const activeValues = {};
+    const activeLabels = {};
+    const activeItems = [];
+    const offPathValues = {};
+    const offPathLabels = {};
+    const offPathItems = [];
+    const formatAnswerDetail = (question) => {
+      const value = answers[question.id];
+      if(Array.isArray(value)){
+        const labels = value.map(v => {
+          const index = question.opts?.findIndex(option => option.v === v);
+          return index >= 0 ? question.opts[index].l : String(v);
+        });
+        return { value, label: labels.join(', ') };
+      }
+      const index = question.opts?.findIndex(option => option.v === value);
+      return {
+        value,
+        label: index >= 0 ? question.opts[index].l : String(value)
+      };
+    };
+    const addAnswerItem = (targetValues, targetLabels, targetItems, question) => {
+      const detail = formatAnswerDetail(question);
+      targetValues[question.var] = detail.value;
+      targetLabels[question.var] = detail.label;
+      targetItems.push({
+        question_id: question.id,
+        variable: question.var,
+        section: question.sec,
+        framework: question.fw,
+        value: detail.value,
+        label: detail.label,
+        question_text: question.text || question.title || ''
+      });
+    };
     const out = {_meta:{
       timestamp:new Date().toISOString(),
       version:'SWTS+Bourdieu+SDT',
+      session_id:getSessionId(),
       branch:answers.B20||'unknown',
       frameworks:['SWTS','Bourdieu','SDT'],
+      completion_status: currentId === 'END_SCREEN' || submitted ? 'complete' : 'in_progress',
+      completion_percentage: currentId === 'END_SCREEN' || submitted ? 100 : getPct(),
       ...buildPathMetadata(answers)
     }};
-    Q.forEach(question => { if(question.var && answers[question.id] !== undefined) out[question.var] = answers[question.id]; });
+    Q.forEach(question => {
+      if(!question.var || answers[question.id] === undefined) return;
+      if(activePath.has(question.id)){
+        addAnswerItem(activeValues, activeLabels, activeItems, question);
+        out[question.var] = answers[question.id];
+      } else {
+        addAnswerItem(offPathValues, offPathLabels, offPathItems, question);
+      }
+    });
+    out._analysis = {
+      values: activeValues,
+      labels: activeLabels,
+      items: activeItems
+    };
+    if(Object.keys(offPathValues).length > 0) {
+      out._audit = {
+        off_path_answers: {
+          values: offPathValues,
+          labels: offPathLabels,
+          items: offPathItems
+        }
+      };
+    }
     out.selected_language = currentLang;
     return out;
   };
@@ -509,8 +723,7 @@ function App() {
 
   const exportCSV = () => {
     const data = buildData();
-    delete data._meta;
-    const keys = Object.keys(data);
+    const keys = Object.keys(data).filter(key => !key.startsWith('_'));
     const vals = keys.map(k=>{
       const v = data[k];
       return '"' + String(Array.isArray(v) ? v.join('|') : v).replace(/"/g,'""') + '"';
@@ -523,32 +736,35 @@ function App() {
     a.click();
   };
 
-  const submitSurvey = () => {
+  const submitSurvey = async () => {
     if(submitting || submitted) return;
     setSubmitting(true);
     const formData = buildData();
     if(enableApiSubmit){
-      fetch('/api/responses', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(formData)
-      })
-      .then(response=>{
-        if(response.ok){
-          clearDraft();
-          setReviewMode(null);
-          setReviewEditContext(null);
-          setSubmitting(false);
-          setSubmitted(true);
-        } else {
-          setSubmitting(false);
-          alert(t('static.submitFail','Submission failed. Please try again later.'));
+      try {
+        const response = await fetch('/api/responses', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(formData)
+        });
+        if(!response.ok){
+          let message = t('static.submitFail','Submission failed. Please try again later.');
+          try {
+            const errorBody = await response.json();
+            if(errorBody?.error) message = errorBody.error;
+          } catch(e){}
+          alert(message);
+          return;
         }
-      })
-      .catch(()=>{
-        setSubmitting(false);
+        clearDraft();
+        setReviewMode(null);
+        setReviewEditContext(null);
+        setSubmitted(true);
+      } catch(e){
         alert(t('static.submitError','Submission failed. Please check your connection.'));
-      });
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       clearDraft();
       setReviewMode(null);
@@ -615,13 +831,15 @@ function App() {
     });
   };
 
-  const getSectionReviewQuestions = (section) => (
-    Q.filter(question =>
+  const getSectionReviewQuestions = (section) => {
+    const activePath = computeActivePath(answers);
+    return Q.filter(question =>
       question.sec === section &&
       question.var &&
-      hasStoredAnswer(question)
-    )
-  );
+      hasStoredAnswer(question) &&
+      activePath.has(question.id)
+    );
+  };
 
   const getReviewQuestions = () => {
     if(!reviewMode) return [];
@@ -630,11 +848,8 @@ function App() {
   };
 
   const getFinalReviewSections = () => {
-    const path = getPathSections().filter(s => s !== 'END');
-    const offPath = ['C','D','E','F'].filter(s =>
-      !path.includes(s) && Q.some(q => q.sec === s && q.var && hasStoredAnswer(q))
-    );
-    return [...path, ...offPath]
+    const path = getPathSections().filter(s => s !== 'END' && s !== 'INTRO');
+    return path
       .map(section => ({
         section,
         label: getSectionLabel(section),
@@ -695,6 +910,9 @@ function App() {
 
   return (
     <>
+      {pathChangeConfirm ? (
+        <PathChangeModal onConfirm={confirmPathChange} onCancel={cancelPathChange} />
+      ) : null}
       <div className="topbar">
         <span className="logo" id="logoText">{t('static.logo','Youth Transition Survey')}</span>
         <div className="top-controls">
@@ -846,9 +1064,9 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
           <div className="intro-body" dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
           <div className="nav intro-actions">
             {hasSurveyStarted ? (
-              <button className="btn btn-next" onClick={onGoToProgress}>Go to current progress →</button>
+              <button className="btn btn-next" onClick={onGoToProgress}>Return to current progress →</button>
             ) : (
-              <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Begin Survey →')}</button>
+              <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Start Survey →')}</button>
             )}
           </div>
         </div>
@@ -1020,6 +1238,21 @@ function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections,
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PathChangeModal({ onConfirm, onCancel }) {
+  return (
+    <div className="path-change-overlay">
+      <div className="path-change-modal">
+        <p className="path-change-notice">Changing this answer updates your survey path.</p>
+        <p className="path-change-body">Answers from sections that no longer apply will be kept safely, but won't be included in your active responses. You'll be taken to the next unanswered question on your new path.</p>
+        <div className="path-change-actions">
+          <button className="btn btn-next" onClick={onConfirm}>Yes, update my path</button>
+          <button className="btn btn-back" onClick={onCancel}>Keep original answer</button>
+        </div>
+      </div>
     </div>
   );
 }

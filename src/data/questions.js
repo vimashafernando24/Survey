@@ -3,6 +3,7 @@ import {
   EDU,
   OCC,
   CONTRACT,
+  SATISFACTION,
   SEARCH,
   OBSTACLE,
   TRAINING_T,
@@ -221,7 +222,7 @@ const Q = [
 {id:'B7_1',sec:'B',fw:'SWTS',var:'spell1_satisfaction',type:'radio',
  text:'How satisfied were you with that first job overall?',
  skip:a=>a.B5b_1!=='ended'||!['wage_work','self_employed','unpaid_family'].includes(a.B5a_1),
- opts:[{v:'1',l:'Satisfied'},{v:'2',l:'Unsatisfied'}], next:'B8_1'},
+ opts:SATISFACTION, next:'B8_1'},
 
 {id:'B8_1',sec:'B',fw:'SWTS',var:'spell1_end_reason',type:'radio',
  text:'Why did that first activity end?',
@@ -257,7 +258,7 @@ const Q = [
 {id:'B7_2',sec:'B',fw:'SWTS',var:'spell2_satisfaction',type:'radio',
  text:'How satisfied were you with that second job?',
  skip:a=>a.B5b_2!=='ended'||!['wage_work','self_employed','unpaid_family'].includes(a.B5a_2),
- opts:[{v:'1',l:'Satisfied'},{v:'2',l:'Unsatisfied'}], next:'B8_2'},
+ opts:SATISFACTION, next:'B8_2'},
 
 {id:'B8_2',sec:'B',fw:'SWTS',var:'spell2_end_reason',type:'radio',
  text:'Why did that second activity end?',
@@ -794,9 +795,9 @@ const Q = [
 
 {id:'E8',sec:'E',fw:'SWTS',var:'contract_type',type:'radio',
  text:'What kind of employment contract are you currently working under?',
- opts:CONTRACT, next:'D9'},
+ opts:CONTRACT, next:'E9'},
 
-{id:'D9',sec:'E',fw:'SWTS',var:'contract_satisfaction',type:'radio',
+{id:'E9',sec:'E',fw:'SWTS',var:'contract_satisfaction',type:'radio',
  text:'How do you feel about your current contract situation?',
  opts:[{v:'1',l:'Satisfied — it gives me the job security I need'},
        {v:'2',l:'Satisfied — it gives me the flexibility I need'},
@@ -854,7 +855,7 @@ const Q = [
 
 {id:'E17',sec:'E',fw:'SWTS',var:'job_satisfaction',type:'radio',
  text:'Overall, how satisfied are you with your main job?',
- opts:[{v:'1',l:'Mostly satisfied'},{v:'2',l:'Somewhat satisfied — mixed feelings'},{v:'3',l:'Mostly unsatisfied'}],
+ opts:SATISFACTION,
  next:'E18'},
 
 {id:'E18',sec:'E',fw:'SWTS',var:'hopes_to_change_job',type:'radio',

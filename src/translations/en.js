@@ -5,7 +5,7 @@ const en = {
       frameworkKey:'Framework Key',
       complete:'complete',
       buttons: {
-        begin:'Begin Survey →',
+        begin:'Start Survey →',
         continue:'Continue →',
         next:'Next →',
         back:'← Back',
