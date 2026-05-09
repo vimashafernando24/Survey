@@ -16,20 +16,25 @@ app.use(express.static(path.join(__dirname, 'dist')));
 let db;
 const client = new MongoClient(process.env.MONGODB_URI);
 
-function extractActiveValues(payload) {
-  if (payload._analysis && payload._analysis.values) return payload._analysis.values;
-  return Object.fromEntries(
-    Object.entries(payload).filter(([key]) => !key.startsWith('_') && key !== 'selected_language')
-  );
-}
-
 function normalizeSurveyResponse(payload) {
   const meta = payload._meta || {};
-  const analysisValues = extractActiveValues(payload);
-  const analysisLabels = payload._analysis?.labels || {};
   const analysisItems = payload._analysis?.items || [];
   const offPathAnswers = payload._audit?.off_path_answers || null;
   const receivedAt = new Date();
+
+  // Canonical answers object keyed by question_id — single source of truth
+  const answers = {};
+  analysisItems.forEach(item => {
+    answers[item.question_id] = {
+      variable: item.variable,
+      section: item.section,
+      framework: item.framework || null,
+      value: item.value,
+      label: item.label,
+      question_text: item.question_text || '',
+      is_active_path: true
+    };
+  });
 
   return {
     respondent: {
@@ -51,18 +56,13 @@ function normalizeSurveyResponse(payload) {
       active_question_ids: meta.active_question_ids || [],
       off_path_question_ids: meta.off_path_question_ids || []
     },
-    analysis: {
-      values: analysisValues,
-      labels: analysisLabels,
-      items: analysisItems
-    },
+    answers,
     audit: {
-      off_path_answers: offPathAnswers,
-      original_meta: meta
+      off_path_answers: offPathAnswers
     },
     selected_language: payload.selected_language || null,
     createdAt: receivedAt,
-    ...analysisValues
+    schema_version: 'v2'
   };
 }
 

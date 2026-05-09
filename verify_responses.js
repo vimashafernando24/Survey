@@ -26,12 +26,21 @@ async function verifyResponses() {
       console.log(`✓ Most recent response ID: ${latest._id}`);
       console.log(`✓ Stored at: ${latest.createdAt}`);
       
-      // Check if it has survey data
-      if (latest.age_group) {
-        console.log(`✓ Survey data detected: age_group = ${latest.age_group}`);
-      }
-      if (latest.test_data) {
-        console.log(`✓ Test data detected: ${latest.test_data}`);
+      // Check schema version and survey data
+      const schemaVersion = latest.schema_version || 'v1';
+      console.log(`✓ Schema version: ${schemaVersion}`);
+      if (schemaVersion === 'v2') {
+        const firstAnswer = latest.answers && Object.values(latest.answers)[0];
+        if (firstAnswer) {
+          console.log(`✓ Survey data detected: ${firstAnswer.variable} = ${firstAnswer.value}`);
+        }
+      } else {
+        if (latest.age_group) {
+          console.log(`✓ Survey data detected (v1): age_group = ${latest.age_group}`);
+        }
+        if (latest.test_data) {
+          console.log(`✓ Test data detected: ${latest.test_data}`);
+        }
       }
       
       console.log('\n✓ Database connection successful and responses are being stored!');
