@@ -16,8 +16,7 @@ import Sidebar from './components/Sidebar.jsx';
 import ResearchRabbitGuide from './components/ResearchRabbitGuide.jsx';
 import { ResearchFoundationsPage, ResearchNav } from './components/ResearchFoundationsPage.jsx';
 import { insightData, researchPages } from './insightData.js';
-import introRabbit from './assets/mascots/rabbit1.png';
-import sectionRabbit from './assets/mascots/rabbit2.png';
+import { getSectionTheme, sectionThemeStyle } from './data/sectionThemes.js';
 import './styles.css';
 
 const DRAFT_KEY = 'nysc_swts_v2';
@@ -25,6 +24,12 @@ const SESSION_KEY = 'nysc_swts_session_id';
 const enableApiSubmit = true;
 const developerMode = false;
 const SEC_EST = {INTRO:1,A:22,B:22,C:14,D:29,E:55,F:10,END:0};
+
+function splitDisplaySectionLabel(label) {
+  const match = String(label || '').match(/^(Section\s+[A-Z])\s+—\s+(.+)$/);
+  if (match) return { kicker: match[1].toUpperCase(), title: match[2] };
+  return { kicker: '', title: label || '' };
+}
 
 function readPath(obj, path) {
   return path.split('.').reduce((value, key) => {
@@ -139,6 +144,7 @@ function App() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [reviewMode, setReviewMode] = useState(null);
   const [reviewEditContext, setReviewEditContext] = useState(null);
+  const [reviewChipEditMode, setReviewChipEditMode] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [activeResearchPage, setActiveResearchPage] = useState(null);
   const [dismissedInsights, setDismissedInsights] = useState(() => new Set());
@@ -176,6 +182,15 @@ function App() {
   const translateQField = (question, field) => t(`questions.${question.id}.${field}`, question[field] || '');
   const translateOptionLabel = (qId, index, defaultLabel) => t(`questions.${qId}.opts.${index}.l`, defaultLabel);
   const translateOptionSub = (qId, index, defaultSub) => qId && defaultSub ? t(`questions.${qId}.opts.${index}.s`, defaultSub) : defaultSub;
+  const translateInsight = (questionId, insight) => {
+    if(!insight) return null;
+    return {
+      ...insight,
+      rabbitPrompt: t(`insights.${questionId}.rabbitPrompt`, insight.rabbitPrompt),
+      whyItMatters: t(`insights.${questionId}.whyItMatters`, insight.whyItMatters),
+      quoteInsight: insight.quoteInsight ? t(`insights.${questionId}.quoteInsight`, insight.quoteInsight) : insight.quoteInsight
+    };
+  };
 
   const getValidationError = (question, val) => {
     if(question.type !== 'number') return null;
@@ -198,7 +213,7 @@ function App() {
         const hsSize = Number(answers[hsSizeQ.id]);
         if(!isNaN(hsSize) && hsSize > 0 && num > hsSize){
           return t('static.validationExceedsHousehold',
-            `This cannot exceed the total household size (${hsSize}).`);
+            `This cannot exceed the total household size (${hsSize}).`).replace('{size}', hsSize);
         }
       }
     }
@@ -401,6 +416,7 @@ function App() {
     setActiveResearchPage(null);
     setReviewMode(null);
     setReviewEditContext(null);
+    setReviewChipEditMode(false);
     setValidationAttempted(false);
     setFieldTouched(false);
   };
@@ -528,14 +544,23 @@ function App() {
 
   const confirmPathChange = () => {
     const { firstUnanswered, history: newHistory } = computePathAndFirstUnanswered(answers);
+    const firstQuestion = getQ(firstUnanswered);
+    const sectionDivider = firstQuestion?.type !== 'divider' && firstQuestion?.sec
+      ? Q.find(question => question.sec === firstQuestion.sec && question.type === 'divider')
+      : null;
+    const redirectId = sectionDivider?.id || firstUnanswered;
+    const dividerIndex = sectionDivider ? newHistory.indexOf(sectionDivider.id) : -1;
+    const redirectHistory = sectionDivider && dividerIndex >= 0
+      ? newHistory.slice(0, dividerIndex)
+      : newHistory;
     setPathChangeConfirm(null);
-    setCurrentId(firstUnanswered);
-    setHistory(newHistory);
+    setCurrentId(redirectId);
+    setHistory(redirectHistory);
     setReviewMode(null);
     setReviewEditContext(null);
     setSavedFeedback(false);
     setPreviewVisible(false);
-    saveDraft(answers, newHistory, firstUnanswered, currentLang);
+    saveDraft(answers, redirectHistory, redirectId, currentLang);
   };
 
   const cancelPathChange = () => {
@@ -861,16 +886,23 @@ function App() {
   const visibleSections = getVisibleSections();
   const pct = q?.type === 'end' || submitted ? 100 : getPct();
 
-  // Chips for current section — only during normal question flow
+  // Chips for current section
   let sectionChips = null;
-  if (!reviewMode && !reviewEditContext && q?.sec && q.sec !== 'INTRO' && q.sec !== 'END') {
-    const chipSec = q.sec;
+  let sectionIntroId = null;
+  const chipSec = reviewMode?.type === 'section'
+    ? reviewMode.section
+    : (reviewChipEditMode && reviewEditContext?.reviewMode?.type === 'section')
+      ? reviewEditContext.reviewMode.section
+      : (!reviewEditContext && q?.sec && q.sec !== 'INTRO' && q.sec !== 'END' ? q.sec : null);
+  if (!activeResearchPage && chipSec) {
     const rawChips = Q.filter(question =>
       question.sec === chipSec &&
       ['radio','select','number','checkbox'].includes(question.type) &&
       !shouldSkip(question, answers)
     );
+    const divider = Q.find(question => question.sec === chipSec && question.type === 'divider');
     if (rawChips.length > 0) {
+      sectionIntroId = divider?.id || null;
       sectionChips = rawChips.map(question => ({
         id: question.id,
         isAnswered: hasStoredAnswer(question),
@@ -886,10 +918,19 @@ function App() {
     : reviewMode?.type === 'section'
     ? getSectionLabel(reviewMode.section)
     : (q ? getSectionLabel(q.sec) : '');
+  const visualSection = activeResearchPage
+    ? 'INTRO'
+    : reviewMode?.type === 'section'
+    ? reviewMode.section
+    : (q?.sec || 'INTRO');
+  const activeSectionTheme = getSectionTheme(visualSection);
+  const activeThemeStyle = sectionThemeStyle(visualSection);
   const previewData = useMemo(() => JSON.stringify(buildData(), null, 2), [answers, currentLang]);
-  const navCurrentSec = reviewEditContext
-    ? getQ(reviewEditContext.progressId)?.sec
-    : (submitted ? 'END' : q?.sec);
+  const navCurrentSec = activeResearchPage
+    ? 'INTRO'
+    : reviewMode?.type === 'section'
+    ? reviewMode.section
+    : (q?.sec || (submitted ? 'END' : undefined));
   const sectionStates = getSectionStates(visibleSections, navCurrentSec);
   const isBranchDivider = !!answers.B20 && q?.type === 'divider' && ['C','D','E','F'].includes(q.sec);
   const reviewQuestions = getReviewQuestions();
@@ -898,6 +939,7 @@ function App() {
     ? getSectionLabel(reviewMode.section)
     : t('static.logo','Youth Transition Survey');
   const finalReviewSections = getFinalReviewSections();
+  const topSecParts = splitDisplaySectionLabel(topSec);
   const currentInsight = q &&
     !activeResearchPage &&
     !reviewMode &&
@@ -905,25 +947,22 @@ function App() {
     insightData[q.id] &&
     hasStoredAnswer(q) &&
     !dismissedInsights.has(q.id)
-      ? insightData[q.id]
+      ? translateInsight(q.id, insightData[q.id])
       : null;
 
   return (
-    <>
+    <div className="survey-shell" style={activeThemeStyle}>
       {pathChangeConfirm ? (
-        <PathChangeModal onConfirm={confirmPathChange} onCancel={cancelPathChange} />
+        <PathChangeModal onConfirm={confirmPathChange} onCancel={cancelPathChange} t={t} />
       ) : null}
       <div className="topbar">
         <span className="logo" id="logoText">{t('static.logo','Youth Transition Survey')}</span>
-        <div className="top-controls">
-          <span className="top-section" id="topSec">{topSec}</span>
-        </div>
         <span className="top-pct" id="topPct">{pct}% {t('static.complete','complete')}</span>
         <div className="lang-switcher">
           {[
-            ['en','EN'],
-            ['si','සිං'],
-            ['ta','தமி']
+            ['en','English'],
+            ['si','සිංහල'],
+            ['ta','தமிழ்']
           ].map(([lang,label]) => (
             <button key={lang} className={`lang-btn${currentLang === lang ? ' active' : ''}`} id={`lang-${lang}`} onClick={() => switchLang(lang)}>{label}</button>
           ))}
@@ -935,11 +974,13 @@ function App() {
         sectionStates={sectionStates}
         getSectionLabel={getSectionLabel}
         onSectionClick={goToSection}
+        t={t}
       />
       <ResearchNav
         activePageId={activeResearchPage}
         onOpenPage={openResearchPage}
         compact
+        t={t}
       />
 
       <div className="layout">
@@ -951,8 +992,16 @@ function App() {
             getSectionLabel={getSectionLabel}
             onSectionClick={goToSection}
           />
-          <SectionChips chips={sectionChips} onChipClick={(qId) => goTo(qId)} />
-          <ResearchNav activePageId={activeResearchPage} onOpenPage={openResearchPage} />
+          <SectionChips
+            chips={sectionChips}
+            introId={sectionIntroId}
+            onChipClick={(qId) => reviewMode && reviewChipEditMode ? editReviewQuestion(qId) : goTo(qId)}
+            onIntroClick={(introId) => goTo(introId)}
+            disableQuestionNavigation={submitted || (!!reviewMode && !reviewChipEditMode) || !!reviewEditContext}
+            editMode={reviewChipEditMode}
+            t={t}
+          />
+          <ResearchNav activePageId={activeResearchPage} onOpenPage={openResearchPage} t={t} />
         </nav>
         <main className="main" id="mainArea">
           {activeResearchPage ? (
@@ -960,6 +1009,7 @@ function App() {
               pageId={activeResearchPage}
               onSelectPage={openResearchPage}
               onBackToSurvey={closeResearchPage}
+              t={t}
             />
           ) : reviewMode ? (
             <SectionReview
@@ -973,9 +1023,17 @@ function App() {
               readOnly={submitted}
               onBack={closeReview}
               onEdit={editReviewQuestion}
+              editMode={reviewChipEditMode}
+              onEnterEditMode={() => setReviewChipEditMode(true)}
+              onExitEditMode={() => setReviewChipEditMode(false)}
+              sectionTheme={getSectionTheme(reviewMode.section)}
             />
           ) : showResume ? (
             <ResumePrompt t={t} resumeDraft={resumeDraft} startFresh={startFresh} />
+          ) : q?.type === 'info' ? (
+            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} hasSurveyStarted={hasSurveyStarted} onGoToProgress={goBack} sectionTheme={activeSectionTheme} submitted={submitted} />
+          ) : q?.type === 'divider' ? (
+            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} branchNotice={isBranchDivider} sectionTheme={activeSectionTheme} submitted={submitted} />
           ) : submitted ? (
             <ThankYou
               t={t}
@@ -987,10 +1045,6 @@ function App() {
               translateQField={translateQField}
               translateOptionLabel={translateOptionLabel}
             />
-          ) : q?.type === 'info' ? (
-            <InfoCard q={q} t={t} getSectionLabel={getSectionLabel} translateQField={translateQField} goTo={goTo} hasSurveyStarted={hasSurveyStarted} onGoToProgress={goBack} mascotSrc={introRabbit} />
-          ) : q?.type === 'divider' ? (
-            <DividerCard q={q} t={t} getNext={getNext} getSectionLabel={getSectionLabel} translateQField={translateQField} history={history} goBack={goBack} goTo={goTo} branchNotice={isBranchDivider} mascotSrc={sectionRabbit} />
           ) : q?.type === 'end' ? (
             <ConfirmCard
               t={t}
@@ -1009,6 +1063,7 @@ function App() {
               translateQField={translateQField}
               translateOptionLabel={translateOptionLabel}
               onEdit={editReviewQuestion}
+              getSectionTheme={getSectionTheme}
             />
           ) : q ? (
             <div className="question-stage">
@@ -1035,44 +1090,53 @@ function App() {
                 savedFeedback={savedFeedback}
                 onReturnToReview={() => returnFromReviewEdit('review')}
                 onReturnToProgress={() => returnFromReviewEdit('progress')}
+                onOpenFrameworkPage={openResearchPage}
+              />
+              <DecorativeSectionMascot
+                theme={activeSectionTheme}
+                hidden={!!currentInsight}
               />
               <ResearchRabbitGuide
                 questionId={q.id}
                 insight={currentInsight}
                 onDismiss={() => dismissInsight(q.id)}
                 onLearnMore={() => openResearchPage(currentInsight.learnMorePage)}
+                t={t}
               />
             </div>
           ) : null}
         </main>
       </div>
-    </>
+    </div>
   );
 }
 
-function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress, mascotSrc}) {
+function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarted, onGoToProgress, sectionTheme, submitted}) {
   return (
     <div className="info-card">
       <div className="intro-card-layout">
         <div className="intro-copy">
           {q.id === 'INTRO' ? (
-            <div className="intro-eyebrow">NYSC Sri Lanka · Research-driven survey</div>
+            <div className="intro-eyebrow">{t('static.introEyebrow','NYSC Sri Lanka · Research-driven survey')}</div>
           ) : (
             <div className="q-section">{getSectionLabel(q.sec)}</div>
           )}
           <h1>{translateQField(q,'title')}</h1>
           <div className="intro-body" dangerouslySetInnerHTML={{__html: translateQField(q,'body')}} />
           <div className="nav intro-actions">
-            {hasSurveyStarted ? (
-              <button className="btn btn-next" onClick={onGoToProgress}>Return to current progress →</button>
+            {submitted ? (
+              <button className="btn btn-submitted" disabled>{t('static.answersSubmitted','Answers Submitted')}</button>
+            ) : hasSurveyStarted ? (
+              <button className="btn btn-next" onClick={onGoToProgress}>{t('static.returnToCurrentProgress','Return to current progress →')}</button>
             ) : (
               <button className="btn btn-next" onClick={() => goTo(q.next)}>{t('static.buttons.begin','Start Survey →')}</button>
             )}
           </div>
         </div>
-        {mascotSrc ? (
+        {sectionTheme?.mascotImage ? (
           <div className="mascot-stage intro-mascot-stage" aria-hidden="true">
-            <img className="page-mascot" src={mascotSrc} alt="" />
+            <div className="mascot-section-label">{sectionTheme.label}</div>
+            <img className="page-mascot" src={sectionTheme.mascotImage} alt="" />
           </div>
         ) : null}
       </div>
@@ -1080,9 +1144,9 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
   );
 }
 
-function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice, mascotSrc}) {
+function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, goBack, goTo, branchNotice, sectionTheme, submitted}) {
   const next = getNext(q);
-  const support = SECTION_SUPPORT[q.sec] || '';
+  const support = q.sec ? t(`sectionSupport.${q.sec}`, SECTION_SUPPORT[q.sec] || '') : '';
   return (
     <>
       <div className="div-card">
@@ -1093,22 +1157,36 @@ function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, 
             </div>
             <p>{translateQField(q,'body')}</p>
             {branchNotice ? (
-              <div className="branch-notice">Based on your answer, this is your survey path.</div>
+              <div className="branch-notice">{t('static.branchNotice','Based on your answer, this is your survey path.')}</div>
             ) : null}
             {support ? <div className="sec-support">{support}</div> : null}
           </div>
-          {mascotSrc ? (
+          {sectionTheme?.mascotImage ? (
             <div className="mascot-stage section-mascot-stage" aria-hidden="true">
-              <img className="section-mascot" src={mascotSrc} alt="" />
+              <div className="mascot-section-label">{sectionTheme.label}</div>
+              <img className="section-mascot" src={sectionTheme.mascotImage} alt="" />
             </div>
           ) : null}
         </div>
       </div>
       <div className="nav">
         {history.length > 0 ? <button className="btn btn-back" onClick={goBack}>{t('static.buttons.back','← Back')}</button> : null}
-        <button className="btn btn-next" onClick={() => goTo(next)}>{t('static.buttons.continue','Continue →')}</button>
+        {submitted ? (
+          <button className="btn btn-submitted" disabled>{t('static.answersSubmitted','Answers Submitted')}</button>
+        ) : (
+          <button className="btn btn-next" onClick={() => goTo(next)}>{t('static.buttons.continue','Continue →')}</button>
+        )}
       </div>
     </>
+  );
+}
+
+function DecorativeSectionMascot({ theme, hidden }) {
+  if(!theme?.mascotImage) return null;
+  return (
+    <div className={`decorative-section-mascot${hidden ? ' hidden' : ''}`} aria-hidden="true">
+      <img src={theme.mascotImage} alt="" />
+    </div>
   );
 }
 
@@ -1128,14 +1206,15 @@ function ConfirmCard({
   answers,
   translateQField,
   translateOptionLabel,
-  onEdit
+  onEdit,
+  getSectionTheme
 }) {
   return (
     <div className="confirm-card">
       <h2>{t('static.confirmTitle','Almost there — please review and submit')}</h2>
       <p>{t('static.confirmBody','You have completed all the survey questions. Your responses help us understand youth transitions in Sri Lanka and improve NYSC programmes for young people.')}</p>
       <FinalReview
-        title="Review answers"
+        title={t('static.reviewAnswers','Review answers')}
         sections={finalReviewSections}
         answers={answers}
         translateQField={translateQField}
@@ -1143,6 +1222,7 @@ function ConfirmCard({
         t={t}
         readOnly={false}
         onEdit={onEdit}
+        getSectionTheme={getSectionTheme}
       />
       <div className="nav" style={{gap:12, marginBottom:24}}>
         {history.length > 0 ? <button className="btn btn-back" onClick={goBack}>{t('static.buttons.back','← Back')}</button> : null}
@@ -1162,10 +1242,10 @@ function ConfirmCard({
   );
 }
 
-function formatReviewAnswer(question, answers, translateOptionLabel) {
+function formatReviewAnswer(question, answers, translateOptionLabel, t) {
   const value = answers[question.id];
   if(value === undefined || value === '' || (Array.isArray(value) && value.length === 0)){
-    return 'Not answered';
+    return t('static.notAnswered','Not answered');
   }
   if(question.type === 'checkbox'){
     return (Array.isArray(value) ? value : []).map(v => {
@@ -1182,16 +1262,36 @@ function formatReviewAnswer(question, answers, translateOptionLabel) {
   return String(value);
 }
 
-function FinalReview({title, sections, answers, translateQField, translateOptionLabel, t, readOnly, onEdit}) {
+function FinalReview({title, sections, answers, translateQField, translateOptionLabel, t, readOnly, onEdit, getSectionTheme}) {
+  const [editMode, setEditMode] = useState(false);
   return (
     <div className="final-review">
-      <h3>{title}</h3>
+      <div className="final-review-header">
+        <h3>{title}</h3>
+        {!readOnly ? (
+          <button
+            className={`btn-edit-answers${editMode ? ' active' : ''}`}
+            onClick={() => setEditMode(true)}
+            disabled={editMode}
+            aria-pressed={editMode}
+          >
+            {editMode ? t('static.editingAnswers','✏ Select a question to edit') : t('static.editAnswers','Edit Answers')}
+          </button>
+        ) : null}
+      </div>
       {sections.length === 0 ? (
         <p className="review-empty">{t('static.noReviewAnswers','No answered questions in this section yet.')}</p>
       ) : (
         sections.map((group, index) => (
-          <details className="final-review-section" key={group.section} open={index === 0}>
-            <summary>{group.label}</summary>
+          <details
+            className="final-review-section"
+            key={group.section}
+            open={index === 0}
+            style={getSectionTheme ? sectionThemeStyle(group.section) : undefined}
+          >
+            <summary>
+              <span className="final-review-summary-copy">{group.label}</span>
+            </summary>
             <div className="review-list">
               {group.questions.map(question => (
                 <div className="review-item" key={question.id}>
@@ -1199,8 +1299,8 @@ function FinalReview({title, sections, answers, translateQField, translateOption
                     <span className="q-id">{question.id}</span>
                     <span>{translateQField(question, 'text')}</span>
                   </div>
-                  <div className="review-answer">{formatReviewAnswer(question, answers, translateOptionLabel)}</div>
-                  {!readOnly ? (
+                  <div className="review-answer">{formatReviewAnswer(question, answers, translateOptionLabel, t)}</div>
+                  {!readOnly && editMode ? (
                     <button className="btn btn-back review-edit" onClick={() => onEdit(question.id)}>{t('static.buttons.edit','Edit')}</button>
                   ) : null}
                 </div>
@@ -1217,18 +1317,19 @@ function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections,
   return (
     <div className="thankyou-card">
       <div className="ty-check">✓</div>
-      <h1>Submitted successfully</h1>
+      <h1>{t('static.submittedSuccessfully','Submitted successfully')}</h1>
       <p style={{fontSize:14,color:'var(--positive)',fontWeight:700,marginBottom:12}}>{t('static.thankYouTitle','Survey Complete')}</p>
       <p>{t('static.thankYouBody','Thank you for participating. Your responses contribute to research on youth labour market transitions in Sri Lanka and will help NYSC design better programmes for young people.')}</p>
-      <p style={{fontSize:14,color:'var(--dim)'}}>Your response has been recorded. You may now close this page.</p>
+      <p style={{fontSize:14,color:'var(--dim)'}}>{t('static.responseRecorded','Your response has been recorded. You may now close this page.')}</p>
       <FinalReview
-        title="Review answers"
+        title={t('static.reviewAnswers','Review answers')}
         sections={finalReviewSections}
         answers={answers}
         translateQField={translateQField}
         translateOptionLabel={translateOptionLabel}
         t={t}
         readOnly
+        getSectionTheme={getSectionTheme}
       />
       {developerMode ? (
         <div style={{marginTop:28,borderTop:'1px solid var(--border)',paddingTop:20}}>
@@ -1242,15 +1343,15 @@ function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections,
   );
 }
 
-function PathChangeModal({ onConfirm, onCancel }) {
+function PathChangeModal({ onConfirm, onCancel, t }) {
   return (
     <div className="path-change-overlay">
       <div className="path-change-modal">
-        <p className="path-change-notice">Changing this answer updates your survey path.</p>
-        <p className="path-change-body">Answers from sections that no longer apply will be kept safely, but won't be included in your active responses. You'll be taken to the next unanswered question on your new path.</p>
+        <p className="path-change-notice">{t('static.pathChangeNotice','Changing this answer updates your survey path.')}</p>
+        <p className="path-change-body">{t('static.pathChangeBody',"Answers from sections that no longer apply will be kept safely, but won't be included in your active responses. You'll be taken to the next relevant introduction or question on your new path.")}</p>
         <div className="path-change-actions">
-          <button className="btn btn-next" onClick={onConfirm}>Yes, update my path</button>
-          <button className="btn btn-back" onClick={onCancel}>Keep original answer</button>
+          <button className="btn btn-next" onClick={onConfirm}>{t('static.updateMyPath','Yes, update my path')}</button>
+          <button className="btn btn-back" onClick={onCancel}>{t('static.keepOriginalAnswer','Keep original answer')}</button>
         </div>
       </div>
     </div>

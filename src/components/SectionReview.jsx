@@ -10,12 +10,16 @@ function SectionReview({
   t,
   readOnly,
   onBack,
-  onEdit
+  onEdit,
+  editMode,
+  onEnterEditMode,
+  onExitEditMode,
+  sectionTheme
 }) {
   const formatAnswer = (q) => {
     const value = answers[q.id];
     if(value === undefined || value === '' || (Array.isArray(value) && value.length === 0)){
-      return 'Not answered';
+      return t('static.notAnswered','Not answered');
     }
     if(q.type === 'checkbox'){
       const values = Array.isArray(value) ? value : [];
@@ -40,7 +44,24 @@ function SectionReview({
           <div className="q-section">{eyebrow}</div>
           <h2>{title}</h2>
         </div>
-        <button className="btn btn-back" onClick={onBack}>{t('static.buttons.back','← Back')}</button>
+        {sectionTheme?.mascotImage ? (
+          <div className="review-mascot" aria-hidden="true">
+            <img src={sectionTheme.mascotImage} alt="" />
+          </div>
+        ) : null}
+        <div className="review-actions">
+          <button className="btn btn-back" onClick={onBack}>{t('static.buttons.back','← Back')}</button>
+          {!readOnly && !editMode ? (
+            <button className="btn-edit-answers" onClick={onEnterEditMode}>
+              {t('static.editAnswers','Edit Answers')}
+            </button>
+          ) : null}
+          {!readOnly && editMode ? (
+            <button className="btn-edit-answers exit" onClick={onExitEditMode}>
+              {t('static.doneEditing','Done Editing')}
+            </button>
+          ) : null}
+        </div>
       </div>
       {questions.length === 0 ? (
         <p className="review-empty">{t('static.noReviewAnswers','No answered questions in this section yet.')}</p>
@@ -53,7 +74,7 @@ function SectionReview({
                 <span>{translateQField(q, 'text')}</span>
               </div>
               <div className="review-answer">{formatAnswer(q)}</div>
-              {!readOnly ? (
+              {!readOnly && editMode ? (
                 <button className="btn btn-back review-edit" onClick={() => onEdit(q.id)}>{t('static.buttons.edit','Edit')}</button>
               ) : null}
             </div>

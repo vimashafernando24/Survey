@@ -7,7 +7,8 @@ function ResearchInsightBubble({
   expanded,
   onExpand,
   onDismiss,
-  onLearnMore
+  onLearnMore,
+  t = (_key, fallback) => fallback
 }) {
   if (!insight) return null;
   const theme = getFrameworkTheme(insight.frameworkTag);
@@ -24,17 +25,18 @@ function ResearchInsightBubble({
       {!expanded ? (
         <button className="research-prompt" onClick={onExpand}>
           <span className="research-prompt-dot" aria-hidden="true"></span>
-          <span>{insight.rabbitPrompt}</span>
+          <span className="research-prompt-copy">{insight.rabbitPrompt}</span>
+          <span className="research-prompt-action">{t('static.showInsight','Show insight')}</span>
         </button>
       ) : (
         <div
           className="research-insight-card"
           role="dialog"
           aria-modal="false"
-          aria-label="Research insight"
+          aria-label={t('static.researchInsight','Research insight')}
         >
-          <button className="research-dismiss" onClick={onDismiss} aria-label="Dismiss research insight">×</button>
-          <div className="research-insight-title">Why this question matters</div>
+          <button className="research-dismiss" onClick={onDismiss} aria-label={t('static.dismissResearchInsight','Dismiss research insight')}>×</button>
+          <div className="research-insight-title">{t('static.whyThisQuestionMatters','Why this question matters')}</div>
           <p>{insight.whyItMatters}</p>
           <div style={{ marginBottom: 10 }}>
             <FrameworkTag tag={insight.frameworkTag} />
@@ -42,7 +44,7 @@ function ResearchInsightBubble({
           {insight.quoteInsight ? (
             <blockquote>{insight.quoteInsight}</blockquote>
           ) : null}
-          <button className="btn btn-back research-learn" onClick={onLearnMore}>Learn more</button>
+          <button className="btn btn-back research-learn" onClick={onLearnMore}>{t('static.learnMore','Learn more')}</button>
         </div>
       )}
     </div>

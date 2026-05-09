@@ -15,10 +15,10 @@ function getMascot(index) {
   return pageMascots[index % pageMascots.length];
 }
 
-function ResearchNav({ activePageId, onOpenPage, compact = false }) {
+function ResearchNav({ activePageId, onOpenPage, compact = false, t = (_key, fallback) => fallback }) {
   return (
-    <div className={compact ? 'research-mobile-nav' : 'research-nav'} aria-label="Research foundations">
-      {!compact ? <div className="research-nav-title">Research Pages</div> : null}
+    <div className={compact ? 'research-mobile-nav' : 'research-nav'} aria-label={t('static.researchFoundations','Research foundations')}>
+      {!compact ? <div className="research-nav-title">{t('static.researchPages','Research Pages')}</div> : null}
       {researchPages.map((page) => {
         const theme = getFrameworkTheme(page.navLabel);
         return (
@@ -43,19 +43,29 @@ function ResearchNav({ activePageId, onOpenPage, compact = false }) {
   );
 }
 
-function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey }) {
+function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey, t = (_key, fallback) => fallback }) {
   const selectedIndex = Math.max(0, pageOrder.indexOf(pageId));
   const page = frameworkPages[pageId] || frameworkPages[pageOrder[0]];
   const mascot = getMascot(selectedIndex);
+  const pageText = {
+    title: t(`research.${pageId}.title`, page.title),
+    subtitle: t(`research.${pageId}.subtitle`, page.subtitle),
+    shortExplanation: t(`research.${pageId}.shortExplanation`, page.shortExplanation),
+    whyItMatters: t(`research.${pageId}.whyItMatters`, page.whyItMatters),
+    whatItHelpsUnderstand: t(`research.${pageId}.whatItHelpsUnderstand`, page.whatItHelpsUnderstand),
+    connectionToTransitions: t(`research.${pageId}.connectionToTransitions`, page.connectionToTransitions),
+    surveyQuestionsSupported: t(`research.${pageId}.surveyQuestionsSupported`, page.surveyQuestionsSupported),
+    whatThisIsNot: t(`research.${pageId}.whatThisIsNot`, page.whatThisIsNot)
+  };
 
   return (
     <section className="research-page">
       <div className="research-page-head">
         <div>
-          <div className="research-eyebrow">Research foundation</div>
-          <h1>{page.title}</h1>
-          {page.subtitle ? (
-            <p className="research-subtitle">{page.subtitle}</p>
+          <div className="research-eyebrow">{t('static.researchFoundation','Research foundation')}</div>
+          <h1>{pageText.title}</h1>
+          {pageText.subtitle ? (
+            <p className="research-subtitle">{pageText.subtitle}</p>
           ) : null}
           {page.frameworkTag ? (
             <div style={{ marginTop: 10 }}>
@@ -93,29 +103,29 @@ function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey }) {
 
       <div className="research-section-grid">
         <article className="research-info-panel">
-          <h2>Short explanation</h2>
-          <p>{page.shortExplanation}</p>
+          <h2>{t('static.shortExplanation','Short explanation')}</h2>
+          <p>{pageText.shortExplanation}</p>
         </article>
 
         <article className="research-info-panel">
-          <h2>Why it matters</h2>
-          <p>{page.whyItMatters}</p>
+          <h2>{t('static.whyItMatters','Why it matters')}</h2>
+          <p>{pageText.whyItMatters}</p>
         </article>
 
         <article className="research-info-panel">
-          <h2>What it helps understand</h2>
-          <p>{page.whatItHelpsUnderstand}</p>
+          <h2>{t('static.whatItHelpsUnderstand','What it helps understand')}</h2>
+          <p>{pageText.whatItHelpsUnderstand}</p>
         </article>
 
         <article className="research-info-panel">
-          <h2>Connection to youth transitions</h2>
-          <p>{page.connectionToTransitions}</p>
+          <h2>{t('static.connectionToYouthTransitions','Connection to youth transitions')}</h2>
+          <p>{pageText.connectionToTransitions}</p>
         </article>
 
         <article className="research-info-panel wide">
-          <h2>Survey questions it supports</h2>
+          <h2>{t('static.surveyQuestionsItSupports','Survey questions it supports')}</h2>
           <div className="survey-questions-pills">
-            {page.surveyQuestionsSupported.map((q) => (
+            {(pageText.surveyQuestionsSupported || []).map((q) => (
               <span key={q} className="survey-question-pill">{q}</span>
             ))}
           </div>
@@ -123,13 +133,13 @@ function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey }) {
       </div>
 
       <div className="what-this-is-not">
-        <strong>What this is not</strong>
-        <p>{page.whatThisIsNot}</p>
+        <strong>{t('static.whatThisIsNot','What this is not')}</strong>
+        <p>{pageText.whatThisIsNot}</p>
       </div>
 
       {page.attribution ? (
-        <aside className="research-attribution" aria-label="Academic source attribution">
-          <span className="research-attribution-label">Source attribution</span>
+        <aside className="research-attribution" aria-label={t('static.academicSourceAttribution','Academic source attribution')}>
+          <span className="research-attribution-label">{t('static.sourceAttribution','Source attribution')}</span>
           <cite>
             <strong>{page.attribution.title}</strong>
             <span>{page.attribution.authors}</span>
@@ -139,7 +149,7 @@ function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey }) {
       ) : null}
 
       <div className="nav research-page-actions">
-        <button className="btn btn-back" onClick={onBackToSurvey}>Back to survey</button>
+        <button className="btn btn-back" onClick={onBackToSurvey}>{t('static.backToSurvey','Back to survey')}</button>
       </div>
     </section>
   );

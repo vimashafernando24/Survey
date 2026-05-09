@@ -1,7 +1,9 @@
 import React from 'react';
-function MobileSectionNav({visibleSections, sectionStates, getSectionLabel, onSectionClick}) {
+import { sectionThemeStyle } from '../data/sectionThemes.js';
+
+function MobileSectionNav({visibleSections, sectionStates, getSectionLabel, onSectionClick, t = (_key, fallback) => fallback}) {
   return (
-    <div className="mobile-section-nav" aria-label="Survey sections">
+    <div className="mobile-section-nav" aria-label={t('static.surveySections','Survey sections')}>
       {visibleSections.map((s) => {
         const state = sectionStates[s] || {};
         const active = !!state.active;
@@ -16,9 +18,10 @@ function MobileSectionNav({visibleSections, sectionStates, getSectionLabel, onSe
           <button
             key={s}
             className={`mobile-sec-btn${active ? ' active' : ''}${done ? ' done' : ''}${available ? ' available' : ''}${isLocked ? ' locked' : ''}${notApplicable ? ' not-path' : ''}${selectedBranch ? ' your-path' : ''}${offPath ? ' prev-path' : ''}`}
+            style={sectionThemeStyle(s)}
             onClick={() => onSectionClick(s, { completed: done, active, locked: isLocked, notApplicable, available, offPathWithAnswers: offPath })}
             disabled={isLocked || notApplicable || offPath}
-            title={selectedBranch ? `${getSectionLabel(s)} — Your survey path` : (notApplicable ? '' : getSectionLabel(s))}
+            title={selectedBranch ? `${getSectionLabel(s)} — ${t('static.yourSurveyPath','Your survey path')}` : (notApplicable ? '' : getSectionLabel(s))}
           >
             <span>{s}</span>
             {done ? <span aria-hidden="true">✓</span> : null}

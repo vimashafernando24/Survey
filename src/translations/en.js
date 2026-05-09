@@ -45,4 +45,63 @@ const en = {
     questions: {}
   };
 
+Object.assign(en.static, {
+  editAnswers:'Edit Answers',
+  editingAnswers:'✏ Select a question to edit',
+  doneEditing:'Done Editing',
+  noReviewAnswers:'No answered questions in this section yet.',
+  reviewAnswers:'Review answers',
+  answersSubmitted:'Answers Submitted',
+  returnToCurrentProgress:'Return to current progress →',
+  introEyebrow:'NYSC Sri Lanka · Research-driven survey',
+  branchNotice:'Based on your answer, this is your survey path.',
+  notAnswered:'Not answered',
+  submittedSuccessfully:'Submitted successfully',
+  responseRecorded:'Your response has been recorded. You may now close this page.',
+  pathChangeNotice:'Changing this answer updates your survey path.',
+  pathChangeBody:"Answers from sections that no longer apply will be kept safely, but won't be included in your active responses. You'll be taken to the next relevant introduction or question on your new path.",
+  updateMyPath:'Yes, update my path',
+  keepOriginalAnswer:'Keep original answer',
+  clickToEdit:'Click to edit',
+  questionProgress:'Question {current} of {total}',
+  answeredProgress:'{answered} of {total} answered',
+  sectionIntroduction:'Section introduction',
+  introChip:'Intro',
+  editQuestion:'Edit {id}',
+  learnMoreAbout:'Learn more about {label}',
+  enterNumber:'Enter number',
+  newAnswerSaved:'New answer saved',
+  backToReview:'Back to review',
+  researchFoundations:'Research foundations',
+  researchPages:'Research Pages',
+  researchFoundation:'Research foundation',
+  shortExplanation:'Short explanation',
+  whyItMatters:'Why it matters',
+  whatItHelpsUnderstand:'What it helps understand',
+  connectionToYouthTransitions:'Connection to youth transitions',
+  surveyQuestionsItSupports:'Survey questions it supports',
+  whatThisIsNot:'What this is not',
+  academicSourceAttribution:'Academic source attribution',
+  sourceAttribution:'Source attribution',
+  backToSurvey:'Back to survey',
+  showInsight:'Show insight',
+  researchInsight:'Research insight',
+  dismissResearchInsight:'Dismiss research insight',
+  whyThisQuestionMatters:'Why this question matters',
+  learnMore:'Learn more',
+  openResearchInsight:'Open research insight',
+  surveySections:'Survey sections',
+  yourSurveyPath:'Your survey path',
+  validationExceedsHousehold:'This cannot exceed the total household size ({size}).'
+});
+
+en.sectionSupport = {
+  A:'Your background helps us understand the range of experiences Sri Lankan youth face.',
+  B:'Your education and activity history are important for this research. Please be as accurate as possible.',
+  C:'These questions help us understand what support works best for young people currently in education.',
+  D:'Your job search experience provides valuable data to help improve employment services for youth.',
+  E:'Thank you for sharing your work experience — understanding successful transitions helps improve youth programmes.',
+  F:'Your current situation matters. Many young people face similar challenges, and your answers help us find solutions.'
+};
+
 export { en };
