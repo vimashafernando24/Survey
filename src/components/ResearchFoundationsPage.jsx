@@ -3,12 +3,22 @@ import { frameworkPages } from '../data/frameworkPageData.js';
 import { getFrameworkTheme } from '../data/frameworkTheme.js';
 import { researchPages } from '../insightData.js';
 import FrameworkTag from './FrameworkTag.jsx';
+import ResponsiveMascotImage from './ResponsiveMascotImage.jsx';
 import rabbit1 from '../assets/mascots/rabbit1.png';
 import rabbit2 from '../assets/mascots/rabbit2.png';
 import rabbit3 from '../assets/mascots/rabbit3.png';
 import rabbit4 from '../assets/mascots/rabbit4.png';
+import rabbit1Small from '../assets/mascots/small/rabbit1.png';
+import rabbit2Small from '../assets/mascots/small/rabbit2.png';
+import rabbit3Small from '../assets/mascots/small/rabbit3.png';
+import rabbit4Small from '../assets/mascots/small/rabbit4.png';
 
-const pageMascots = [rabbit1, rabbit2, rabbit3, rabbit4].filter(Boolean);
+const pageMascots = [
+  { src: rabbit1, smallSrc: rabbit1Small },
+  { src: rabbit2, smallSrc: rabbit2Small },
+  { src: rabbit3, smallSrc: rabbit3Small },
+  { src: rabbit4, smallSrc: rabbit4Small }
+];
 const pageOrder = ['swts', 'srilanka', 'bourdieu', 'sdt'];
 function getMascot(index) {
   if (pageMascots.length === 0) return null;
@@ -75,7 +85,13 @@ function ResearchFoundationsPage({ pageId, onSelectPage, onBackToSurvey, t = (_k
         </div>
         {mascot ? (
           <div className="mascot-stage research-mascot-stage" aria-hidden="true">
-            <img className="research-page-mascot" src={mascot} alt="" />
+            <ResponsiveMascotImage
+              className="research-page-mascot"
+              src={mascot.src}
+              smallSrc={mascot.smallSrc}
+              sizes="(max-width: 768px) 45vw, 288px"
+              alt=""
+            />
           </div>
         ) : null}
       </div>

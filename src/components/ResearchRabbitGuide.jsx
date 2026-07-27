@@ -1,12 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ResearchInsightBubble from './ResearchInsightBubble.jsx';
+import ResponsiveMascotImage from './ResponsiveMascotImage.jsx';
 import rabbit1 from '../assets/mascots/rabbit1.png';
 import rabbit2 from '../assets/mascots/rabbit2.png';
 import rabbit3 from '../assets/mascots/rabbit3.png';
 import rabbit4 from '../assets/mascots/rabbit4.png';
 import rabbit5 from '../assets/mascots/rabbit5.png';
+import rabbit1Small from '../assets/mascots/small/rabbit1.png';
+import rabbit2Small from '../assets/mascots/small/rabbit2.png';
+import rabbit3Small from '../assets/mascots/small/rabbit3.png';
+import rabbit4Small from '../assets/mascots/small/rabbit4.png';
+import rabbit5Small from '../assets/mascots/small/rabbit5.png';
 
-const rabbitPoses = [rabbit1, rabbit2, rabbit3, rabbit4, rabbit5].filter(Boolean);
+const rabbitPoses = [
+  { src: rabbit1, smallSrc: rabbit1Small },
+  { src: rabbit2, smallSrc: rabbit2Small },
+  { src: rabbit3, smallSrc: rabbit3Small },
+  { src: rabbit4, smallSrc: rabbit4Small },
+  { src: rabbit5, smallSrc: rabbit5Small }
+];
 
 function playSoftRabbitCue() {
   try {
@@ -90,7 +102,14 @@ function ResearchRabbitGuide({ questionId, insight, onDismiss, onLearnMore, t })
         onClick={() => setIsExpanded(true)}
         aria-label={t ? t('static.openResearchInsight','Open research insight') : 'Open research insight'}
       >
-        {rabbitSrc ? <img src={rabbitSrc} alt="" /> : <span aria-hidden="true">?</span>}
+        {rabbitSrc ? (
+          <ResponsiveMascotImage
+            src={rabbitSrc.src}
+            smallSrc={rabbitSrc.smallSrc}
+            sizes="(max-width: 768px) 30vw, 292px"
+            alt=""
+          />
+        ) : <span aria-hidden="true">?</span>}
       </button>
       {(showPrompt || isExpanded) && (
         <ResearchInsightBubble

@@ -5,6 +5,13 @@ import unemployedMascot from '../assets/mascots/unemployed.png';
 import employedMascot from '../assets/mascots/employed.png';
 import outsideLabourMascot from '../assets/mascots/outsidelabour.png';
 import introMascot from '../assets/mascots/rabbit1.png';
+import householdMascotSmall from '../assets/mascots/small/householdInfo.png';
+import educationHistoryMascotSmall from '../assets/mascots/small/edubackgroundInfo.png';
+import inEducationMascotSmall from '../assets/mascots/small/ineducation.png';
+import unemployedMascotSmall from '../assets/mascots/small/unemployed.png';
+import employedMascotSmall from '../assets/mascots/small/employed.png';
+import outsideLabourMascotSmall from '../assets/mascots/small/outsidelabour.png';
+import introMascotSmall from '../assets/mascots/small/rabbit1.png';
 
 const sectionThemes = {
   INTRO: {
@@ -15,6 +22,7 @@ const sectionThemes = {
     borderColor: '#ead2a4',
     gradientBackground: 'linear-gradient(135deg, #fff8ec 0%, #f7efe4 54%, #fffdf8 100%)',
     mascotImage: introMascot,
+    mascotImageSmall: introMascotSmall,
     accent: '#f3c96f',
     textColor: '#3c3730'
   },
@@ -26,6 +34,7 @@ const sectionThemes = {
     borderColor: '#efcf73',
     gradientBackground: 'linear-gradient(135deg, #fff7dc 0%, #fffdf6 48%, #f6e6ad 100%)',
     mascotImage: householdMascot,
+    mascotImageSmall: householdMascotSmall,
     accent: '#f7d75c',
     textColor: '#3c3730'
   },
@@ -37,6 +46,7 @@ const sectionThemes = {
     borderColor: '#d9b992',
     gradientBackground: 'linear-gradient(135deg, #f6eadb 0%, #fffaf3 48%, #dbc1a2 100%)',
     mascotImage: educationHistoryMascot,
+    mascotImageSmall: educationHistoryMascotSmall,
     accent: '#b99367',
     textColor: '#362d24'
   },
@@ -48,6 +58,7 @@ const sectionThemes = {
     borderColor: '#b8d2eb',
     gradientBackground: 'linear-gradient(135deg, #e8f3ff 0%, #ffffff 50%, #c8def3 100%)',
     mascotImage: inEducationMascot,
+    mascotImageSmall: inEducationMascotSmall,
     accent: '#7fb3de',
     textColor: '#26384a'
   },
@@ -59,6 +70,7 @@ const sectionThemes = {
     borderColor: '#efc19b',
     gradientBackground: 'linear-gradient(135deg, #fff1e3 0%, #fffdf9 48%, #f5c59e 100%)',
     mascotImage: unemployedMascot,
+    mascotImageSmall: unemployedMascotSmall,
     accent: '#f0a45e',
     textColor: '#3d3027'
   },
@@ -70,6 +82,7 @@ const sectionThemes = {
     borderColor: '#bad7bd',
     gradientBackground: 'linear-gradient(135deg, #eaf7ec 0%, #ffffff 48%, #c7dfca 100%)',
     mascotImage: employedMascot,
+    mascotImageSmall: employedMascotSmall,
     accent: '#8fbd89',
     textColor: '#29382b'
   },
@@ -81,6 +94,7 @@ const sectionThemes = {
     borderColor: '#cdbbe3',
     gradientBackground: 'linear-gradient(135deg, #f2ecfb 0%, #fffafe 50%, #d8c6ec 100%)',
     mascotImage: outsideLabourMascot,
+    mascotImageSmall: outsideLabourMascotSmall,
     accent: '#aa8bd0',
     textColor: '#342c3e'
   },
@@ -92,6 +106,7 @@ const sectionThemes = {
     borderColor: '#c8d4d8',
     gradientBackground: 'linear-gradient(135deg, #eef3f4 0%, #ffffff 52%, #d9e3e7 100%)',
     mascotImage: introMascot,
+    mascotImageSmall: introMascotSmall,
     accent: '#9cb1bb',
     textColor: '#30383d'
   }

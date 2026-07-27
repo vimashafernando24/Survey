@@ -14,6 +14,7 @@ import SectionChips from './components/SectionChips.jsx';
 import SectionReview from './components/SectionReview.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ResearchRabbitGuide from './components/ResearchRabbitGuide.jsx';
+import ResponsiveMascotImage from './components/ResponsiveMascotImage.jsx';
 import { ResearchFoundationsPage, ResearchNav } from './components/ResearchFoundationsPage.jsx';
 import { insightData, researchPages } from './insightData.js';
 import { getSectionTheme, sectionThemeStyle } from './data/sectionThemes.js';
@@ -1194,7 +1195,13 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
         {sectionTheme?.mascotImage ? (
           <div className="mascot-stage intro-mascot-stage" aria-hidden="true">
             <div className="mascot-section-label">{sectionTheme.label}</div>
-            <img className="page-mascot" src={sectionTheme.mascotImage} alt="" />
+            <ResponsiveMascotImage
+              className="page-mascot"
+              src={sectionTheme.mascotImage}
+              smallSrc={sectionTheme.mascotImageSmall}
+              sizes="(max-width: 768px) 45vw, 425px"
+              alt=""
+            />
           </div>
         ) : null}
       </div>
@@ -1226,7 +1233,13 @@ function DividerCard({q, t, getNext, getSectionLabel, translateQField, history, 
           {sectionTheme?.mascotImage ? (
             <div className="mascot-stage section-mascot-stage" aria-hidden="true">
               <div className="mascot-section-label">{sectionTheme.label}</div>
-              <img className="section-mascot" src={sectionTheme.mascotImage} alt="" />
+              <ResponsiveMascotImage
+                className="section-mascot"
+                src={sectionTheme.mascotImage}
+                smallSrc={sectionTheme.mascotImageSmall}
+                sizes="(max-width: 768px) 40vw, 344px"
+                alt=""
+              />
             </div>
           ) : null}
         </div>
@@ -1247,7 +1260,12 @@ function DecorativeSectionMascot({ theme, hidden }) {
   if(!theme?.mascotImage) return null;
   return (
     <div className={`decorative-section-mascot${hidden ? ' hidden' : ''}`} aria-hidden="true">
-      <img src={theme.mascotImage} alt="" />
+      <ResponsiveMascotImage
+        src={theme.mascotImage}
+        smallSrc={theme.mascotImageSmall}
+        sizes="(max-width: 768px) 35vw, 360px"
+        alt=""
+      />
     </div>
   );
 }
@@ -1361,9 +1379,11 @@ function FinalReview({title, sections, answers, translateQField, translateOption
                 );
               })()}
               {getSectionTheme?.(group.section)?.mascotImage ? (
-                <img
+                <ResponsiveMascotImage
                   className="review-summary-mascot"
                   src={getSectionTheme(group.section).mascotImage}
+                  smallSrc={getSectionTheme(group.section).mascotImageSmall}
+                  sizes="(max-width: 768px) 32vw, 176px"
                   alt=""
                   aria-hidden="true"
                 />

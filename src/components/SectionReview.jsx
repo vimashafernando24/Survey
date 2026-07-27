@@ -1,4 +1,5 @@
 import React from 'react';
+import ResponsiveMascotImage from './ResponsiveMascotImage.jsx';
 
 function SectionReview({
   title,
@@ -52,7 +53,12 @@ function SectionReview({
         </div>
         {sectionTheme?.mascotImage ? (
           <div className="review-mascot" aria-hidden="true">
-            <img src={sectionTheme.mascotImage} alt="" />
+            <ResponsiveMascotImage
+              src={sectionTheme.mascotImage}
+              smallSrc={sectionTheme.mascotImageSmall}
+              sizes="(max-width: 768px) 50vw, 340px"
+              alt=""
+            />
           </div>
         ) : null}
         <div className="review-actions">
