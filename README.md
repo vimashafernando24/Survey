@@ -51,16 +51,13 @@ Open `nysc_swts_survey.html` in a browser to test the full flow.
 
 JSON and CSV export buttons remain as backup options.
 
-## Free deployment on Render
+## Free pilot deployment
 
-This repository includes a `render.yaml` Blueprint for a free Render web
-service. The service builds the React application, serves it from Express, and
-stores submissions in MongoDB Atlas.
+This repository supports Vercel Hobby for a free non-commercial pilot. Vercel
+builds the React application and runs the endpoints in `api/` as Node.js
+functions. Survey submissions remain in MongoDB Atlas.
 
-1. In Render, create a new Blueprint from this GitHub repository.
-2. Set the secret `MONGODB_URI` environment variable when prompted.
+1. Import this GitHub repository into Vercel.
+2. Set the `MONGODB_URI` environment variable for Production.
 3. Deploy and verify that `/api/health` returns a JSON response with
    `"status": "ok"`.
-
-Free Render services sleep after periods of inactivity, so the first visit
-after a quiet period can take longer to load.
