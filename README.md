@@ -31,7 +31,7 @@ To test the POST /api/responses endpoint:
 ```bash
 curl -X POST http://localhost:3000/api/responses \
   -H "Content-Type: application/json" \
-  -d '{"test": "data", "_meta": {"version": "test"}}'
+  -d '{"_meta":{"session_id":"local-smoke-test"},"_analysis":{"items":[]},"selected_language":"en"}'
 ```
 
 Expected response:
@@ -49,5 +49,18 @@ The survey HTML file is configured to send data to the backend when `enableApiSu
 
 Open `nysc_swts_survey.html` in a browser to test the full flow.
 
-JSON and CSV export buttons remain as backup options.</content>
-<parameter name="filePath">/Users/vimashafernando/Desktop/SurveyFolder/README.md
+JSON and CSV export buttons remain as backup options.
+
+## Free deployment on Render
+
+This repository includes a `render.yaml` Blueprint for a free Render web
+service. The service builds the React application, serves it from Express, and
+stores submissions in MongoDB Atlas.
+
+1. In Render, create a new Blueprint from this GitHub repository.
+2. Set the secret `MONGODB_URI` environment variable when prompted.
+3. Deploy and verify that `/api/health` returns a JSON response with
+   `"status": "ok"`.
+
+Free Render services sleep after periods of inactivity, so the first visit
+after a quiet period can take longer to load.

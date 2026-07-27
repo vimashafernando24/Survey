@@ -8,13 +8,22 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? false : true
+}));
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // MongoDB connection
 let db;
-const client = new MongoClient(process.env.MONGODB_URI);
+if (!process.env.MONGODB_URI) {
+  console.error('MONGODB_URI is required');
+  process.exit(1);
+}
+const client = new MongoClient(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 10000
+});
 
 function normalizeSurveyResponse(payload) {
   const meta = payload._meta || {};
@@ -77,6 +86,13 @@ async function connectDB() {
   }
 }
 
+app.get('/api/health', (req, res) => {
+  res.status(db ? 200 : 503).json({
+    status: db ? 'ok' : 'unavailable',
+    database: db ? 'connected' : 'disconnected'
+  });
+});
+
 // API endpoint
 app.post('/api/responses', async (req, res) => {
   try {
@@ -87,6 +103,10 @@ app.post('/api/responses', async (req, res) => {
 
     if (!db) {
       return res.status(503).json({ error: 'Database connection is not ready. Please try again.' });
+    }
+
+    if (!Array.isArray(req.body._analysis?.items) || !req.body._meta?.session_id) {
+      return res.status(400).json({ error: 'Invalid survey response.' });
     }
 
     const responseData = normalizeSurveyResponse(req.body);
@@ -114,7 +134,18 @@ app.get('*', (req, res) => {
 
 // Start server
 connectDB().then(() => {
-  app.listen(port, () => {
+  const server = app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
   });
+
+  async function shutdown(signal) {
+    console.log(`${signal} received; shutting down`);
+    server.close(async () => {
+      await client.close();
+      process.exit(0);
+    });
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 });
