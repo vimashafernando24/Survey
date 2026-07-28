@@ -20,13 +20,39 @@ const rabbitPoses = [
   { src: rabbit5, smallSrc: rabbit5Small }
 ];
 
+let rabbitAudioContext = null;
+
+function getRabbitAudioContext() {
+  if (typeof window === 'undefined') return null;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  if (!rabbitAudioContext || rabbitAudioContext.state === 'closed') {
+    rabbitAudioContext = new AudioContext();
+  }
+  return rabbitAudioContext;
+}
+
+// Mobile browsers generally allow later audio only after an AudioContext has
+// been activated by a real user gesture. Prime it on the first tap anywhere.
+if (typeof document !== 'undefined') {
+  const unlockRabbitAudio = () => {
+    try {
+      const audioContext = getRabbitAudioContext();
+      if (audioContext?.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+    } catch {
+      // Audio is an enhancement; the visual prompt remains fully functional.
+    }
+  };
+  document.addEventListener('pointerdown', unlockRabbitAudio, { once: true, passive: true });
+  document.addEventListener('keydown', unlockRabbitAudio, { once: true });
+}
+
 function playSoftRabbitCue() {
   try {
-    if (typeof window === 'undefined') return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-
-    const audioContext = new AudioContext();
+    const audioContext = getRabbitAudioContext();
+    if (!audioContext) return;
     const startCue = () => {
       const now = audioContext.currentTime;
       const master = audioContext.createGain();
@@ -43,10 +69,6 @@ function playSoftRabbitCue() {
         oscillator.start(now + index * 0.08);
         oscillator.stop(now + 0.24 + index * 0.08);
       });
-
-      window.setTimeout(() => {
-        audioContext.close().catch(() => {});
-      }, 650);
     };
 
     if (audioContext.state === 'suspended') {
@@ -87,6 +109,9 @@ function ResearchRabbitGuide({ questionId, insight, onDismiss, onLearnMore, t })
     if (lastSoundKey.current !== soundKey) {
       lastSoundKey.current = soundKey;
       playSoftRabbitCue();
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(35);
+      }
     }
   }, [insight, questionId]);
 
