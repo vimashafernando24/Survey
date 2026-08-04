@@ -9,6 +9,28 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--bg); color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; }
 button, input, select { max-width:100%; }
+/* Native-script fonts keep Sinhala/Tamil combining marks correctly shaped and spaced. */
+html[lang='si'] body, html[lang='si'] button, html[lang='si'] input, html[lang='si'] select,
+html[lang='si'] .logo, html[lang='si'] .info-card h1, html[lang='si'] .q-text,
+html[lang='si'] .div-card h2, html[lang='si'] .research-page h1,
+html[lang='si'] .review-head h2, html[lang='si'] .final-review h3,
+html[lang='si'] .final-review-header h3, html[lang='si'] .resume-card h2,
+html[lang='si'] .confirm-card h2, html[lang='si'] .thankyou-card h1 {
+  font-family:'Noto Sans Sinhala',sans-serif;
+  letter-spacing:normal;
+  text-transform:none;
+}
+html[lang='ta'] body, html[lang='ta'] button, html[lang='ta'] input, html[lang='ta'] select,
+html[lang='ta'] .logo, html[lang='ta'] .info-card h1, html[lang='ta'] .q-text,
+html[lang='ta'] .div-card h2, html[lang='ta'] .research-page h1,
+html[lang='ta'] .review-head h2, html[lang='ta'] .final-review h3,
+html[lang='ta'] .final-review-header h3, html[lang='ta'] .resume-card h2,
+html[lang='ta'] .confirm-card h2, html[lang='ta'] .thankyou-card h1 {
+  font-family:'Noto Sans Tamil',sans-serif;
+  letter-spacing:normal;
+  text-transform:none;
+}
+html[lang='si'] .info-card h1, html[lang='ta'] .info-card h1 { line-height:1.35; }
 .language-entry { min-height:100vh; display:grid; place-items:center; padding:24px; background:radial-gradient(circle at top, #fffaf3 0, var(--bg) 58%); }
 .language-card { width:min(680px, 100%); padding:52px 48px; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.94); box-shadow:0 20px 55px rgba(60,55,48,.09); text-align:center; }
 .language-card h1 { margin-bottom:8px; font-family:'Instrument Serif',serif; font-size:clamp(34px, 6vw, 48px); line-height:1.15; font-weight:500; color:var(--text); }
