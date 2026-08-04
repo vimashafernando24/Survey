@@ -1218,7 +1218,7 @@ function InfoCard({q, t, getSectionLabel, translateQField, goTo, hasSurveyStarte
   const secParts = q.id !== 'INTRO' ? splitDisplaySectionLabel(getSectionLabel(q.sec)) : null;
 
   return (
-    <div className="info-card">
+    <div className={`info-card${q.id === 'INTRO' ? ' survey-intro-card' : ''}`}>
       <div className="intro-card-layout">
         <div className="intro-copy">
           {q.id === 'INTRO' ? (

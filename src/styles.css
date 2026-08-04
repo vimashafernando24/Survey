@@ -1014,6 +1014,29 @@ input[type=number]:focus, select:focus, input[type=text]:focus {
 .what-this-is-not p { line-height:1.65; margin:0; }
 .research-attribution { margin-top:20px; padding:14px 16px; border:1px solid rgba(227,213,196,.9); border-radius:8px; background:rgba(255,255,255,.58); color:var(--muted); }
 .research-attribution-label { display:block; font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin-bottom:8px; }
+
+/* Give the longer Sinhala welcome page a stronger, more visible mascot. */
+html[lang='si'] .survey-intro-card .intro-mascot-stage { min-height:clamp(28rem, 42vw, 38rem); }
+html[lang='si'] .survey-intro-card .page-mascot {
+  width:clamp(23rem, 37vw, 32rem);
+  height:clamp(29rem, 44vw, 39rem);
+}
+
+@media (max-width: 768px) {
+  html[lang='si'] .survey-intro-card .intro-mascot-stage { min-height:clamp(13rem, 48vw, 18rem); }
+  html[lang='si'] .survey-intro-card .page-mascot {
+    width:clamp(11rem, 45vw, 15rem);
+    height:clamp(13rem, 52vw, 18rem);
+  }
+}
+
+@media (max-width: 430px) {
+  html[lang='si'] .survey-intro-card .intro-mascot-stage { min-height:clamp(11rem, 50vw, 14rem); }
+  html[lang='si'] .survey-intro-card .page-mascot {
+    width:clamp(9.5rem, 46vw, 12rem);
+    height:clamp(11rem, 54vw, 14rem);
+  }
+}
 .research-attribution cite { display:flex; flex-direction:column; gap:4px; font-style:normal; font-size:12.5px; line-height:1.55; }
 .research-attribution cite strong { color:var(--text); font-size:13px; line-height:1.4; }
 .research-attribution cite span { overflow-wrap:anywhere; }
