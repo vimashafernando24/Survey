@@ -133,6 +133,7 @@ function computePathAndFirstUnanswered(answerSet) {
 
 function App() {
   const [currentLang, setCurrentLang] = useState('en');
+  const [languageSelected, setLanguageSelected] = useState(false);
   const [answers, setAnswers] = useState({});
   const [history, setHistory] = useState([]);
   const [currentId, setCurrentId] = useState('INTRO');
@@ -167,6 +168,10 @@ function App() {
   useEffect(() => {
     if(!showResume) window.scrollTo({top:0,behavior:'smooth'});
   }, [currentId, currentLang, submitted, showResume]);
+
+  useEffect(() => {
+    document.documentElement.lang = currentLang === 'si' ? 'si' : currentLang === 'ta' ? 'ta' : 'en';
+  }, [currentLang]);
 
   useEffect(() => {
     if(!savedFeedback) return;
@@ -833,6 +838,11 @@ function App() {
     saveDraft(answers, history, currentId, lang);
   };
 
+  const chooseInitialLanguage = (lang) => {
+    setCurrentLang(lang);
+    setLanguageSelected(true);
+  };
+
   const resumeDraft = () => {
     if(!pendingDraft){
       startFresh();
@@ -841,7 +851,6 @@ function App() {
     setAnswers(pendingDraft.a || {});
     setHistory(pendingDraft.h || []);
     setCurrentId(pendingDraft.id || 'INTRO');
-    setCurrentLang(pendingDraft.lang || 'en');
     setPendingDraft(null);
     setShowResume(false);
     setReviewMode(null);
@@ -856,7 +865,6 @@ function App() {
     setAnswers({});
     setHistory([]);
     setCurrentId('INTRO');
-    setCurrentLang('en');
     setSubmitted(false);
     setSubmitting(false);
     setReviewMode(null);
@@ -997,6 +1005,10 @@ function App() {
 
   return (
     <div className="survey-shell" style={activeThemeStyle}>
+      {!languageSelected ? (
+        <LanguageSelection onSelect={chooseInitialLanguage} />
+      ) : (
+      <>
       {pathChangeConfirm ? (
         <PathChangeModal onConfirm={confirmPathChange} onCancel={cancelPathChange} t={t} />
       ) : null}
@@ -1152,7 +1164,47 @@ function App() {
           ) : null}
         </main>
       </div>
+      </>
+      )}
     </div>
+  );
+}
+
+function LanguageSelection({onSelect}) {
+  const languages = [
+    {code:'en', name:'English', prompt:'Continue in English'},
+    {code:'si', name:'සිංහල', prompt:'සිංහලෙන් ඉදිරියට යන්න'},
+    {code:'ta', name:'தமிழ்', prompt:'தமிழில் தொடரவும்'}
+  ];
+
+  return (
+    <main className="language-entry" aria-labelledby="language-title">
+      <section className="language-card">
+        <h1 id="language-title">Choose your language</h1>
+        <p className="language-intro">
+          ඔබේ භාෂාව තෝරන්න · உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்
+        </p>
+        <div className="language-options">
+          {languages.map(language => (
+            <button
+              key={language.code}
+              className="language-option"
+              onClick={() => onSelect(language.code)}
+              lang={language.code}
+            >
+              <span className="language-name">{language.name}</span>
+              <span className="language-prompt">{language.prompt}</span>
+              <span className="language-arrow" aria-hidden="true">→</span>
+            </button>
+          ))}
+        </div>
+        <p className="language-note">
+          <span lang="en">You can change the language at any time during the survey.</span>
+          <span lang="si">සමීක්ෂණය අතරතුර ඕනෑම වේලාවක භාෂාව වෙනස් කළ හැකිය.</span>
+          <span lang="ta">கணக்கெடுப்பின் போது எந்த நேரத்திலும் மொழியை மாற்றலாம்.</span>
+        </p>
+      </section>
+    </main>
   );
 }
 
