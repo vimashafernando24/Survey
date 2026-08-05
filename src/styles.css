@@ -1056,3 +1056,52 @@ html[lang='si'] .survey-intro-card .page-mascot {
   .research-info-panel.wide { grid-column:auto; }
   .research-info-panel { padding:14px; }
 }
+.reflection-journey {
+  margin: 28px 0;
+  padding: clamp(22px, 4vw, 38px);
+  text-align: left;
+  background: linear-gradient(145deg, #fffaf1, #f4f7e9);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+}
+
+.reflection-journey > h2 {
+  margin: 0 0 12px;
+  color: var(--positive);
+  text-align: center;
+}
+
+.reflection-intro,
+.reflection-closing {
+  text-align: center;
+  line-height: 1.75;
+}
+
+.reflection-sections {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.reflection-section {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+}
+
+.reflection-section h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.reflection-section p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.reflection-closing {
+  margin: 0;
+  color: var(--positive);
+  font-weight: 700;
+}

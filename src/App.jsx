@@ -143,6 +143,7 @@ function App() {
   const [showResume, setShowResume] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [reflection, setReflection] = useState(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [reviewMode, setReviewMode] = useState(null);
   const [reviewEditContext, setReviewEditContext] = useState(null);
@@ -815,6 +816,8 @@ function App() {
           alert(message);
           return;
         }
+        const responseBody = await response.json();
+        setReflection(responseBody?.reflection || null);
         clearDraft();
         setReviewMode(null);
         setReviewEditContext(null);
@@ -1094,6 +1097,7 @@ function App() {
           ) : submitted ? (
             <ThankYou
               t={t}
+              reflection={reflection}
               developerMode={developerMode}
               exportJSON={exportJSON}
               exportCSV={exportCSV}
@@ -1462,7 +1466,7 @@ function FinalReview({title, sections, answers, translateQField, translateOption
   );
 }
 
-function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections, answers, translateQField, translateOptionLabel}) {
+function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalReviewSections, answers, translateQField, translateOptionLabel}) {
   return (
     <div className="thankyou-card">
       <div className="ty-check">✓</div>
@@ -1470,6 +1474,21 @@ function ThankYou({t, developerMode, exportJSON, exportCSV, finalReviewSections,
       <p style={{fontSize:14,color:'var(--positive)',fontWeight:700,marginBottom:12}}>{t('static.thankYouTitle','Survey Complete')}</p>
       <p>{t('static.thankYouBody','Thank you for participating. Your responses contribute to research on youth labour market transitions in Sri Lanka and will help NYSC design better programmes for young people.')}</p>
       <p style={{fontSize:14,color:'var(--dim)'}}>{t('static.responseRecorded','Your response has been recorded. You may now close this page.')}</p>
+      {reflection ? (
+        <article className="reflection-journey" aria-labelledby="reflection-title">
+          <h2 id="reflection-title">{reflection.title}</h2>
+          <p className="reflection-intro">{reflection.intro}</p>
+          <div className="reflection-sections">
+            {reflection.sections.map((section, index) => (
+              <section className="reflection-section" key={`${section.heading}-${index}`}>
+                <h3>{section.heading}</h3>
+                <p>{section.paragraph}</p>
+              </section>
+            ))}
+          </div>
+          <p className="reflection-closing">{reflection.closing}</p>
+        </article>
+      ) : null}
       <FinalReview
         title={t('static.reviewAnswers','Review answers')}
         sections={finalReviewSections}

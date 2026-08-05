@@ -1,5 +1,7 @@
 const { getDatabase } = require('./_database');
 const { normalizeSurveyResponse } = require('./_normalize');
+const { generateReflection } = require('../story/generateReflection');
+const { fallbackReflection } = require('../story/reflectionFallback');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,10 +22,19 @@ module.exports = async function handler(req, res) {
     const responseData = normalizeSurveyResponse(req.body);
     const result = await db.collection('survey_responses').insertOne(responseData);
 
+    let reflection;
+    try {
+      reflection = await generateReflection(responseData);
+    } catch (error) {
+      console.error('Reflection generation failed after survey save:', error?.message || 'unknown_error');
+      reflection = fallbackReflection(responseData.selected_language);
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Survey response saved successfully',
-      id: result.insertedId
+      id: result.insertedId,
+      reflection
     });
   } catch (error) {
     console.error('Error saving response:', error);
