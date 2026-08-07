@@ -1529,6 +1529,7 @@ function ReflectionJourneyPage({reflection, t, onBack}) {
       className="reflection-page"
       style={{'--reflection-background': `url(${reflectionBackground})`}}
     >
+      <div className="reflection-mobile-hero" aria-hidden="true" />
       <div className="reflection-page-shade" aria-hidden="true" />
       <article className="reflection-page-panel" aria-labelledby="reflection-title">
         <div className="reflection-page-toolbar">
