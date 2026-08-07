@@ -1105,3 +1105,187 @@ html[lang='si'] .survey-intro-card .page-mascot {
   color: var(--positive);
   font-weight: 700;
 }
+
+.reflection-invitation {
+  margin: 28px auto 8px;
+  padding: 22px;
+  max-width: 620px;
+  border: 1px solid rgba(101, 141, 109, .32);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(244, 247, 233, .9), rgba(255, 250, 241, .96));
+  text-align: center;
+}
+
+.reflection-invitation p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.reflection-journey-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 14px 22px;
+  border: 1px solid #52765a;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #739a72, #52765a);
+  color: #fff;
+  font: 800 15px/1.35 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(82, 118, 90, .26);
+  animation: reflectionCtaPulse 1.65s ease-in-out infinite;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.reflection-journey-cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 32px rgba(82, 118, 90, .36);
+}
+
+.reflection-journey-cta:focus-visible,
+.reflection-back-button:focus-visible {
+  outline: 3px solid rgba(210, 141, 70, .42);
+  outline-offset: 4px;
+}
+
+@keyframes reflectionCtaPulse {
+  0%, 100% { box-shadow: 0 10px 26px rgba(82, 118, 90, .24), 0 0 0 0 rgba(101, 141, 109, .38); }
+  50% { box-shadow: 0 14px 32px rgba(82, 118, 90, .38), 0 0 0 11px rgba(101, 141, 109, 0); }
+}
+
+.reflection-page {
+  position: relative;
+  min-height: 100vh;
+  padding: clamp(20px, 4vw, 58px);
+  background-color: #f8f1df;
+  background-image: var(--reflection-background);
+  background-size: cover;
+  background-position: center bottom;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+.reflection-page-shade {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 251, 242, .1), rgba(255, 251, 242, 0));
+  pointer-events: none;
+}
+
+.reflection-page-panel {
+  position: relative;
+  z-index: 1;
+  width: min(850px, 100%);
+  margin: 0 auto;
+  border: 1px solid rgba(121, 103, 76, .2);
+  border-radius: 30px;
+  background: rgba(255, 253, 247, .3);
+  box-shadow: 0 26px 70px rgba(76, 62, 39, .18);
+  backdrop-filter: blur(2px);
+  overflow: hidden;
+}
+
+.reflection-page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px clamp(18px, 4vw, 34px);
+  border-bottom: 1px solid rgba(121, 103, 76, .16);
+  background: rgba(255, 250, 239, .22);
+  color: #718065;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.reflection-back-button {
+  padding: 9px 14px;
+  border: 1px solid rgba(121, 103, 76, .22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .76);
+  color: var(--text);
+  font: 750 12px/1.3 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+}
+
+.reflection-page-copy {
+  padding: clamp(28px, 6vw, 62px);
+}
+
+.reflection-page-eyebrow {
+  margin: 0 0 10px;
+  color: #9b7448;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.reflection-page-copy > h1 {
+  margin: 0 0 16px;
+  color: #4d5f47;
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(38px, 6vw, 58px);
+  font-weight: 500;
+  line-height: 1.08;
+  text-align: center;
+}
+
+html[lang='si'] .reflection-page-copy > h1,
+html[lang='si'] .reflection-page .reflection-section h2 {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+}
+
+html[lang='ta'] .reflection-page-copy > h1,
+html[lang='ta'] .reflection-page .reflection-section h2 {
+  font-family: 'Noto Sans Tamil', sans-serif;
+}
+
+.reflection-page .reflection-intro {
+  max-width: 680px;
+  margin: 0 auto;
+  color: #61594f;
+}
+
+.reflection-page .reflection-section {
+  border: 1px solid rgba(121, 103, 76, .14);
+  border-left: 4px solid #89a17d;
+  background: rgba(255, 255, 255, .24);
+  box-shadow: 0 8px 22px rgba(76, 62, 39, .06);
+}
+
+.reflection-page .reflection-section h2 {
+  margin: 0 0 8px;
+  color: #52634c;
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.reflection-page .reflection-closing {
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(238, 242, 223, .28);
+  color: #52634c;
+}
+
+@media (max-width: 640px) {
+  .reflection-page { padding: 12px; background-attachment: scroll; }
+  .reflection-page-panel { border-radius: 22px; }
+  .reflection-page-toolbar { align-items: flex-start; flex-direction: column; }
+  .reflection-page-copy { padding: 28px 18px 34px; }
+  .reflection-page-copy > h1 { font-size: clamp(34px, 11vw, 46px); }
+  .reflection-page .reflection-section { padding: 17px; }
+  .reflection-journey-cta { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reflection-journey-cta { animation: none; }
+}

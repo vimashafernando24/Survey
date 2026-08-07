@@ -2,19 +2,15 @@
   "name": "nysc-survey-backend",
   "version": "1.0.0",
   "description": "Backend for NYSC Youth Transition Survey",
-  "main": "server.js",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "start": "node server.js",
     "test:reflection": "node --test story/tests/*.test.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.2.1",
-    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
     "mongodb": "^6.3.0",
     "openai": "^7.4.0",
     "react": "^18.2.0",

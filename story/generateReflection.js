@@ -2,7 +2,7 @@ const OpenAI = require('openai');
 const { extractApprovedFacts } = require('./reflectionFacts');
 const { fallbackReflection } = require('./reflectionFallback');
 const { buildReflectionInput } = require('./reflectionPrompt');
-const { validateReflection } = require('./reflectionValidator');
+const { validateReflectionDetailed } = require('./reflectionValidator');
 
 const REFLECTION_SCHEMA = {
   type: 'object',
@@ -51,30 +51,47 @@ async function generateReflection(savedResponse) {
     maxRetries: 0
   });
 
-  const response = await client.responses.create({
-    model: process.env.OPENAI_REFLECTION_MODEL,
-    reasoning: { effort: 'none' },
-    max_output_tokens: 1200,
-    instructions: prompt.instructions,
-    input: prompt.input,
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'participant_reflection',
-        strict: true,
-        schema: REFLECTION_SCHEMA
+  const requestReflection = async correction => {
+    const response = await client.responses.create({
+      model: process.env.OPENAI_REFLECTION_MODEL,
+      reasoning: { effort: 'none' },
+      max_output_tokens: 1200,
+      instructions: prompt.instructions,
+      input: correction
+        ? `${prompt.input}\n\nYour previous response failed validation for: ${correction}. Generate a fresh response that corrects every listed issue.`
+        : prompt.input,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'participant_reflection',
+          strict: true,
+          schema: REFLECTION_SCHEMA
+        }
       }
-    }
-  });
+    });
 
-  let reflection;
-  try {
-    reflection = JSON.parse(response.output_text);
-  } catch {
-    throw new Error('reflection_invalid_json');
+    try {
+      return JSON.parse(response.output_text);
+    } catch {
+      return null;
+    }
+  };
+
+  let reflection = await requestReflection();
+  let validation = reflection
+    ? validateReflectionDetailed(reflection, language)
+    : { valid: false, reasons: ['invalid_json'] };
+
+  if (!validation.valid) {
+    reflection = await requestReflection(validation.reasons.join(', '));
+    validation = reflection
+      ? validateReflectionDetailed(reflection, language)
+      : { valid: false, reasons: ['invalid_json'] };
   }
 
-  if (!validateReflection(reflection, language)) throw new Error('reflection_validation_failed');
+  if (!validation.valid) {
+    throw new Error(`reflection_validation_failed:${validation.reasons.join(',')}`);
+  }
   return reflection;
 }
 

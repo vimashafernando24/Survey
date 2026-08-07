@@ -29,13 +29,28 @@ function usesRequestedLanguage(text, language) {
 }
 
 function validateReflection(value, language = 'en') {
-  if (!hasExactKeys(value, ROOT_KEYS)) return false;
-  if (!validText(value.title, 100) || !validText(value.intro, 500) || !validText(value.closing, 500)) return false;
-  if (!Array.isArray(value.sections) || value.sections.length < 1 || value.sections.length > 4) return false;
+  return validateReflectionDetailed(value, language).valid;
+}
+
+function validateReflectionDetailed(value, language = 'en') {
+  const reasons = [];
+  if (!hasExactKeys(value, ROOT_KEYS)) {
+    return { valid: false, reasons: ['root_structure'] };
+  }
+  if (!validText(value.title, 100)) reasons.push('title_length');
+  if (!validText(value.intro, 500)) reasons.push('intro_length');
+  if (!validText(value.closing, 500)) reasons.push('closing_length');
+  if (!Array.isArray(value.sections) || value.sections.length < 1 || value.sections.length > 4) {
+    return { valid: false, reasons: [...reasons, 'sections_count'] };
+  }
 
   for (const section of value.sections) {
-    if (!hasExactKeys(section, SECTION_KEYS)) return false;
-    if (!validText(section.heading, 100) || !validText(section.paragraph, 1200)) return false;
+    if (!hasExactKeys(section, SECTION_KEYS)) {
+      reasons.push('section_structure');
+      continue;
+    }
+    if (!validText(section.heading, 100)) reasons.push('section_heading_length');
+    if (!validText(section.paragraph, 1200)) reasons.push('section_paragraph_length');
   }
 
   const combined = [
@@ -45,9 +60,11 @@ function validateReflection(value, language = 'en') {
     value.closing
   ].join('\n');
 
-  return combined.length <= 5000
-    && usesRequestedLanguage(combined, language)
-    && !BANNED.some(pattern => pattern.test(combined));
+  if (combined.length > 5000) reasons.push('total_length');
+  if (!usesRequestedLanguage(combined, language)) reasons.push('requested_language');
+  if (BANNED.some(pattern => pattern.test(combined))) reasons.push('prohibited_content');
+
+  return { valid: reasons.length === 0, reasons: [...new Set(reasons)] };
 }
 
-module.exports = { validateReflection };
+module.exports = { validateReflection, validateReflectionDetailed };

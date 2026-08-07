@@ -18,6 +18,7 @@ import ResponsiveMascotImage from './components/ResponsiveMascotImage.jsx';
 import { ResearchFoundationsPage, ResearchNav } from './components/ResearchFoundationsPage.jsx';
 import { insightData, researchPages } from './insightData.js';
 import { getSectionTheme, sectionThemeStyle } from './data/sectionThemes.js';
+import reflectionBackground from './assets/mascots/background.png';
 import './styles.css';
 
 const DRAFT_KEY = 'nysc_swts_v2';
@@ -144,6 +145,7 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reflection, setReflection] = useState(null);
+  const [showReflectionJourney, setShowReflectionJourney] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [reviewMode, setReviewMode] = useState(null);
   const [reviewEditContext, setReviewEditContext] = useState(null);
@@ -168,7 +170,7 @@ function App() {
 
   useEffect(() => {
     if(!showResume) window.scrollTo({top:0,behavior:'smooth'});
-  }, [currentId, currentLang, submitted, showResume]);
+  }, [currentId, currentLang, submitted, showResume, showReflectionJourney]);
 
   useEffect(() => {
     document.documentElement.lang = currentLang === 'si' ? 'si' : currentLang === 'ta' ? 'ta' : 'en';
@@ -188,7 +190,9 @@ function App() {
       const nav = _browserNavRef.current;
       if (!nav) return;
       let handled = false;
-      if (nav.pathChangeConfirm) {
+      if (nav.showReflectionJourney) {
+        nav.closeReflectionJourney(); handled = true;
+      } else if (nav.pathChangeConfirm) {
         nav.cancelPathChange(); handled = true;
       } else if (nav.activeResearchPage) {
         nav.closeResearchPage(); handled = true;
@@ -1001,10 +1005,22 @@ function App() {
     reviewEditContext,
     cancelPathChange,
     closeResearchPage,
+    showReflectionJourney,
+    closeReflectionJourney: () => setShowReflectionJourney(false),
     returnFromReviewEdit,
     closeReview,
     goBack,
   };
+
+  if (languageSelected && submitted && showReflectionJourney && reflection) {
+    return (
+      <ReflectionJourneyPage
+        reflection={reflection}
+        t={t}
+        onBack={() => setShowReflectionJourney(false)}
+      />
+    );
+  }
 
   return (
     <div className="survey-shell" style={activeThemeStyle}>
@@ -1105,6 +1121,7 @@ function App() {
               answers={answers}
               translateQField={translateQField}
               translateOptionLabel={translateOptionLabel}
+              onOpenReflection={() => setShowReflectionJourney(true)}
             />
           ) : q?.type === 'end' ? (
             <ConfirmCard
@@ -1466,7 +1483,7 @@ function FinalReview({title, sections, answers, translateQField, translateOption
   );
 }
 
-function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalReviewSections, answers, translateQField, translateOptionLabel}) {
+function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalReviewSections, answers, translateQField, translateOptionLabel, onOpenReflection}) {
   return (
     <div className="thankyou-card">
       <div className="ty-check">✓</div>
@@ -1475,19 +1492,14 @@ function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalRev
       <p>{t('static.thankYouBody','Thank you for participating. Your responses contribute to research on youth labour market transitions in Sri Lanka and will help NYSC design better programmes for young people.')}</p>
       <p style={{fontSize:14,color:'var(--dim)'}}>{t('static.responseRecorded','Your response has been recorded. You may now close this page.')}</p>
       {reflection ? (
-        <article className="reflection-journey" aria-labelledby="reflection-title">
-          <h2 id="reflection-title">{reflection.title}</h2>
-          <p className="reflection-intro">{reflection.intro}</p>
-          <div className="reflection-sections">
-            {reflection.sections.map((section, index) => (
-              <section className="reflection-section" key={`${section.heading}-${index}`}>
-                <h3>{section.heading}</h3>
-                <p>{section.paragraph}</p>
-              </section>
-            ))}
-          </div>
-          <p className="reflection-closing">{reflection.closing}</p>
-        </article>
+        <div className="reflection-invitation">
+          <p>{t('static.reflectionInvitation','We prepared a personal reflection from the journey you shared.')}</p>
+          <button className="reflection-journey-cta" type="button" onClick={onOpenReflection}>
+            <span aria-hidden="true">✦</span>
+            {t('static.openReflectionJourney','Open your Reflection Journey')}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       ) : null}
       <FinalReview
         title={t('static.reviewAnswers','Review answers')}
@@ -1508,6 +1520,39 @@ function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalRev
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ReflectionJourneyPage({reflection, t, onBack}) {
+  return (
+    <main
+      className="reflection-page"
+      style={{'--reflection-background': `url(${reflectionBackground})`}}
+    >
+      <div className="reflection-page-shade" aria-hidden="true" />
+      <article className="reflection-page-panel" aria-labelledby="reflection-title">
+        <div className="reflection-page-toolbar">
+          <button className="reflection-back-button" type="button" onClick={onBack}>
+            {t('static.backToSubmission','← Back to submission')}
+          </button>
+          <span>{t('static.yourReflectionJourney','Your Reflection Journey')}</span>
+        </div>
+        <div className="reflection-page-copy">
+          <p className="reflection-page-eyebrow">{t('static.journeyShared','The journey you shared')}</p>
+          <h1 id="reflection-title">{reflection.title}</h1>
+          <p className="reflection-intro">{reflection.intro}</p>
+          <div className="reflection-sections">
+            {reflection.sections.map((section, index) => (
+              <section className="reflection-section" key={`${section.heading}-${index}`}>
+                <h2>{section.heading}</h2>
+                <p>{section.paragraph}</p>
+              </section>
+            ))}
+          </div>
+          <p className="reflection-closing">{reflection.closing}</p>
+        </div>
+      </article>
+    </main>
   );
 }
 

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 
 const { extractApprovedFacts } = require('../reflectionFacts');
 const { fallbackReflection } = require('../reflectionFallback');
-const { validateReflection } = require('../reflectionValidator');
+const { validateReflection, validateReflectionDetailed } = require('../reflectionValidator');
 
 test('extracts only approved active-path narrative facts', () => {
   const facts = extractApprovedFacts({
@@ -31,4 +31,13 @@ test('validator rejects advice and unexpected fields', () => {
 
   const extra = { ...fallbackReflection('en'), metadata: {} };
   assert.equal(validateReflection(extra, 'en'), false);
+});
+
+test('validator reports actionable failure categories', () => {
+  const reflection = fallbackReflection('en');
+  reflection.sections[0].paragraph = 'This means you should change direction.';
+
+  const result = validateReflectionDetailed(reflection, 'en');
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.reasons, ['prohibited_content']);
 });

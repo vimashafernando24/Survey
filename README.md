@@ -1,6 +1,8 @@
-# NYSC Youth Transition Survey Backend
+# NYSC Youth Transition Survey
 
-Simple Node.js backend for collecting survey responses.
+React survey with Vercel Functions for collecting responses and generating the
+participant reflection. Local development and production both use the handlers
+in `api/`; there is no separate local API implementation.
 
 ## Setup
 
@@ -18,18 +20,19 @@ Simple Node.js backend for collecting survey responses.
    MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/surveydb?retryWrites=true&w=majority
    ```
 
-3. Start the server:
+3. Start the local application:
    ```
-   npm start
+   npm run dev
    ```
-   The server will run on port 3000 (or PORT env var).
+   Vite serves the frontend and invokes the same handlers from `api/` that are
+   deployed in production. Use the local URL printed by the command.
 
 ## Testing the API
 
 To test the POST /api/responses endpoint:
 
 ```bash
-curl -X POST http://localhost:3000/api/responses \
+curl -X POST http://localhost:5173/api/responses \
   -H "Content-Type: application/json" \
   -d '{"_meta":{"session_id":"local-smoke-test"},"_analysis":{"items":[]},"selected_language":"en"}'
 ```
@@ -39,17 +42,10 @@ Expected response:
 {
   "success": true,
   "message": "Survey response saved successfully",
-  "id": "..."
+  "id": "...",
+  "reflection": {}
 }
 ```
-
-## Frontend
-
-The survey HTML file is configured to send data to the backend when `enableApiSubmit` is true.
-
-Open `nysc_swts_survey.html` in a browser to test the full flow.
-
-JSON and CSV export buttons remain as backup options.
 
 ## Free pilot deployment
 
