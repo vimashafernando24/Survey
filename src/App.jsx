@@ -1500,7 +1500,6 @@ function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalRev
       <h1>{t('static.submittedSuccessfully','Submitted successfully')}</h1>
       <p style={{fontSize:14,color:'var(--positive)',fontWeight:700,marginBottom:12}}>{t('static.thankYouTitle','Survey Complete')}</p>
       <p>{t('static.thankYouBody','Thank you for participating. Your responses contribute to research on youth labour market transitions in Sri Lanka and will help NYSC design better programmes for young people.')}</p>
-      <p style={{fontSize:14,color:'var(--dim)'}}>{t('static.responseRecorded','Your response has been recorded. You may now close this page.')}</p>
       {reflection ? (
         <div className="reflection-invitation">
           <p>{t('static.reflectionInvitation','We prepared a personal reflection from the journey you shared.')}</p>
@@ -1511,6 +1510,7 @@ function ThankYou({t, reflection, developerMode, exportJSON, exportCSV, finalRev
           </button>
         </div>
       ) : null}
+      <p style={{fontSize:14,color:'var(--dim)'}}>{t('static.responseRecorded','Your response has been recorded. You may now close this page.')}</p>
       <FinalReview
         title={t('static.reviewAnswers','Review answers')}
         sections={finalReviewSections}
