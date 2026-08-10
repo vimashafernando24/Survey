@@ -675,8 +675,13 @@ function App() {
   };
 
   const buildPathMetadata = (answerSet = answers) => {
-    const activeBranch = getBranchSection(answerSet) || 'unknown';
     const activeSections = getPathSections(answerSet);
+    // Use the last branch section actually walked (via next/skip), not just the
+    // initial B20 answer — B20='temp_absent' etc. can redirect E -> D or E -> F
+    // mid-flow, and getBranchSection() alone would keep reporting the entry branch.
+    const branchSections = ['C','D','E','F'];
+    const walkedBranch = [...activeSections].reverse().find(s => branchSections.includes(s));
+    const activeBranch = walkedBranch || getBranchSection(answerSet) || 'unknown';
     const activeSectionSet = new Set(activeSections);
     const activePath = computeActivePath(answerSet);
     const answeredQuestions = Q.filter(question => question.var && hasStoredAnswer(question, answerSet));

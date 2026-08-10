@@ -734,7 +734,7 @@ const Q = [
        {v:'4',l:'I feel quite uncertain and directionless about my future'}],
  next:'END_SCREEN'},
 
-// ── F — EMPLOYED ────────────────────────────────────────────
+// ── E — EMPLOYED ────────────────────────────────────────────
 {id:'E_DIV',sec:'E',fw:'SWTS',type:'divider',
  title:'Section E — Employed or Have a Job',
  body:'These questions are about your current work situation. Please answer in relation to your main job.',
@@ -1164,7 +1164,7 @@ const Q = [
        {v:'5',l:'I have little choice right now — it was available'}],
  next:'END_SCREEN'},
 
-// ── G — NOT IN LABOUR FORCE ─────────────────────────────────
+// ── F — NOT IN LABOUR FORCE ─────────────────────────────────
 {id:'F_DIV',sec:'F',fw:'SWTS',type:'divider',
  title:'Section F — Currently Outside the Labour Force',
  body:'These questions are about your current situation and your plans for the future.',
