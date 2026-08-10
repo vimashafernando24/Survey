@@ -54,6 +54,10 @@ function clearDraft(){
   try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
 }
 
+function clearSessionId(){
+  try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+}
+
 function getSessionId(){
   try {
     let id = localStorage.getItem(SESSION_KEY);
@@ -828,6 +832,7 @@ function App() {
         const responseBody = await response.json();
         setReflection(responseBody?.reflection || null);
         clearDraft();
+        clearSessionId();
         setReviewMode(null);
         setReviewEditContext(null);
         setSubmitted(true);
