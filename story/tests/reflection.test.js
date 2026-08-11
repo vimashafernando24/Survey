@@ -39,5 +39,5 @@ test('validator reports actionable failure categories', () => {
 
   const result = validateReflectionDetailed(reflection, 'en');
   assert.equal(result.valid, false);
-  assert.deepEqual(result.reasons, ['prohibited_content']);
+  assert.deepEqual(result.reasons, ['prohibited_phrase:"you should"', 'prohibited_phrase:"This means"']);
 });

@@ -62,7 +62,10 @@ function validateReflectionDetailed(value, language = 'en') {
 
   if (combined.length > 5000) reasons.push('total_length');
   if (!usesRequestedLanguage(combined, language)) reasons.push('requested_language');
-  if (BANNED.some(pattern => pattern.test(combined))) reasons.push('prohibited_content');
+  BANNED.forEach(pattern => {
+    const match = combined.match(pattern);
+    if (match) reasons.push(`prohibited_phrase:"${match[0]}"`);
+  });
 
   return { valid: reasons.length === 0, reasons: [...new Set(reasons)] };
 }

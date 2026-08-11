@@ -474,10 +474,10 @@ const Q = [
 {id:'SC1',sec:'C',fw:'SDT',var:'study_motivation_type',type:'radio',
  text:'Why are you studying right now? Which best describes your motivation?',
  hint:'SDT regulatory style — distinguishes genuine interest from external pressure',
- opts:[{v:'1',l:'Because I am genuinely passionate about this subject'},
-       {v:'2',l:'Because it aligns with my own goals and will lead to what I want'},
+ opts:[{v:'1',l:'I am genuinely passionate about this subject'},
+       {v:'2',l:'It aligns with my own goals and will lead to what I want'},
        {v:'3',l:'To avoid disappointing my family or feeling guilty about not studying'},
-       {v:'4',l:'Because I need the qualification for a job — it is a requirement'},
+       {v:'4',l:'I need the qualification for a job — it is a requirement'},
        {v:'5',l:'I am not sure why — I am following the path I ended up on'}],
  next:'SC2'},
 

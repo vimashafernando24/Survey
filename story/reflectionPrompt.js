@@ -13,6 +13,8 @@ Write a warm, detailed, connected reflection in the requested language. Present 
 
 Return only the required JSON object. Use 2 to 4 sections when enough facts exist, otherwise use 1 section. Do not use Markdown or lists.
 
+Example of the connective style required (do not copy the content, only the technique): "You completed your secondary education and moved directly into full-time work. Your account also describes a strong interest in the retail sector, where you now work as a sales assistant." This connects two facts in sequence, using plain conjunctions like "and" and "also", without asserting that one caused the other.
+
 Hard validation requirements:
 - Keep the title and each section heading under 100 characters.
 - Keep the intro and closing under 500 characters each, and each section paragraph under 1,200 characters.
