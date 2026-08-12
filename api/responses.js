@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
 
     await db.collection('survey_responses').updateOne(
       { _id: result.insertedId },
-      { $set: { reflection_source: reflectionSource, reflection_error: reflectionError } }
+      { $set: { reflection, reflection_source: reflectionSource, reflection_error: reflectionError } }
     );
 
     return res.status(201).json({

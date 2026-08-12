@@ -62,4 +62,5 @@ test('survey remains successful and saved when reflection generation fails', asy
   assert.equal(validateReflection(body.reflection, 'en'), true);
   assert.equal(updatedFields.reflection_source, 'fallback');
   assert.equal(updatedFields.reflection_error, 'simulated_failure');
+  assert.deepEqual(updatedFields.reflection, body.reflection);
 });
