@@ -903,7 +903,8 @@ const Q = [
 {id:'E24',sec:'E',fw:'SWTS',var:'expected_highest_edu_f',type:'radio',
  text:'What is the highest level of education or training you expect to eventually achieve?',
  skip:a=>a.E23!=='yes',
- opts:[{v:'4',l:'Vocational certificate or NVQ'},{v:'5',l:'Diploma'},
+ opts:[{v:'2',l:'O/L level'},{v:'3',l:'A/L level'},
+       {v:'4',l:'Vocational certificate or NVQ'},{v:'5',l:'Diploma'},
        {v:'6',l:"Bachelor's degree"},{v:'7',l:'Post-graduate degree'}],
  next:'E25'},
 
