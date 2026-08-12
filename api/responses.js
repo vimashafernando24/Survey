@@ -23,12 +23,21 @@ module.exports = async function handler(req, res) {
     const result = await db.collection('survey_responses').insertOne(responseData);
 
     let reflection;
+    let reflectionSource = 'ai';
+    let reflectionError = null;
     try {
       reflection = await generateReflection(responseData);
     } catch (error) {
-      console.error('Reflection generation failed after survey save:', error?.message || 'unknown_error');
+      reflectionError = error?.message || 'unknown_error';
+      console.error('Reflection generation failed after survey save:', reflectionError);
+      reflectionSource = 'fallback';
       reflection = fallbackReflection(responseData.selected_language);
     }
+
+    await db.collection('survey_responses').updateOne(
+      { _id: result.insertedId },
+      { $set: { reflection_source: reflectionSource, reflection_error: reflectionError } }
+    );
 
     return res.status(201).json({
       success: true,

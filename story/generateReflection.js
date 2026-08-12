@@ -1,6 +1,5 @@
 const OpenAI = require('openai');
 const { extractApprovedFacts } = require('./reflectionFacts');
-const { fallbackReflection } = require('./reflectionFallback');
 const { buildReflectionInput } = require('./reflectionPrompt');
 const { validateReflectionDetailed } = require('./reflectionValidator');
 
@@ -40,8 +39,11 @@ async function generateReflection(savedResponse) {
     : 'en';
   const approvedFacts = extractApprovedFacts(savedResponse);
 
-  if (!process.env.OPENAI_API_KEY || !process.env.OPENAI_REFLECTION_MODEL || approvedFacts.length === 0) {
-    return fallbackReflection(language);
+  if (!process.env.OPENAI_API_KEY || !process.env.OPENAI_REFLECTION_MODEL) {
+    throw new Error('reflection_unconfigured');
+  }
+  if (approvedFacts.length === 0) {
+    throw new Error('no_approved_facts');
   }
 
   const prompt = buildReflectionInput(language, approvedFacts);

@@ -7,6 +7,7 @@ test('survey remains successful and saved when reflection generation fails', asy
   const generatorPath = require.resolve('../generateReflection');
   const handlerPath = require.resolve('../../api/responses');
   let savedDocument;
+  let updatedFields;
 
   require.cache[databasePath] = {
     id: databasePath,
@@ -18,6 +19,10 @@ test('survey remains successful and saved when reflection generation fails', asy
           insertOne: async document => {
             savedDocument = document;
             return { insertedId: 'saved-id' };
+          },
+          updateOne: async (filter, update) => {
+            updatedFields = update.$set;
+            return { matchedCount: 1 };
           }
         })
       })
@@ -55,4 +60,6 @@ test('survey remains successful and saved when reflection generation fails', asy
   assert.equal(body.success, true);
   assert.equal(body.id, 'saved-id');
   assert.equal(validateReflection(body.reflection, 'en'), true);
+  assert.equal(updatedFields.reflection_source, 'fallback');
+  assert.equal(updatedFields.reflection_error, 'simulated_failure');
 });
