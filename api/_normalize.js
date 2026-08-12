@@ -5,6 +5,12 @@ function normalizeSurveyResponse(payload) {
   const receivedAt = new Date();
   const answers = {};
 
+  const submittedAt = meta.timestamp ? new Date(meta.timestamp) : receivedAt;
+  const startedAt = meta.session_started_at ? new Date(meta.session_started_at) : null;
+  const durationSeconds = startedAt && !Number.isNaN(startedAt.getTime()) && startedAt <= submittedAt
+    ? Math.round((submittedAt - startedAt) / 1000)
+    : null;
+
   analysisItems.forEach(item => {
     answers[item.question_id] = {
       variable: item.variable,
@@ -23,7 +29,9 @@ function normalizeSurveyResponse(payload) {
       language: payload.selected_language || null
     },
     submission: {
-      submitted_at: meta.timestamp ? new Date(meta.timestamp) : receivedAt,
+      submitted_at: submittedAt,
+      started_at: startedAt,
+      duration_seconds: durationSeconds,
       received_at: receivedAt,
       status: meta.completion_status || 'complete',
       completion_percentage: meta.completion_percentage ?? null

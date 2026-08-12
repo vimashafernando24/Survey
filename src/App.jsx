@@ -23,6 +23,7 @@ import './styles.css';
 
 const DRAFT_KEY = 'nysc_swts_v2';
 const SESSION_KEY = 'nysc_swts_session_id';
+const SESSION_START_KEY = 'nysc_swts_session_started_at';
 const enableApiSubmit = true;
 const developerMode = false;
 const SEC_EST = {INTRO:1,A:22,B:22,C:14,D:29,E:55,F:10,END:0};
@@ -56,6 +57,23 @@ function clearDraft(){
 
 function clearSessionId(){
   try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+}
+
+function clearSessionStartTime(){
+  try { localStorage.removeItem(SESSION_START_KEY); } catch(e){}
+}
+
+function getSessionStartTime(){
+  try {
+    let startedAt = localStorage.getItem(SESSION_START_KEY);
+    if(!startedAt){
+      startedAt = new Date().toISOString();
+      localStorage.setItem(SESSION_START_KEY, startedAt);
+    }
+    return startedAt;
+  } catch(e){
+    return new Date().toISOString();
+  }
 }
 
 function getSessionId(){
@@ -752,6 +770,7 @@ function App() {
       timestamp:new Date().toISOString(),
       version:'SWTS+Bourdieu+SDT',
       session_id:getSessionId(),
+      session_started_at:getSessionStartTime(),
       branch:answers.B20||'unknown',
       frameworks:['SWTS','Bourdieu','SDT'],
       completion_status: currentId === 'END_SCREEN' || submitted ? 'complete' : 'in_progress',
@@ -833,6 +852,7 @@ function App() {
         setReflection(responseBody?.reflection || null);
         clearDraft();
         clearSessionId();
+        clearSessionStartTime();
         setReviewMode(null);
         setReviewEditContext(null);
         setSubmitted(true);
@@ -856,6 +876,7 @@ function App() {
   };
 
   const chooseInitialLanguage = (lang) => {
+    getSessionStartTime();
     setCurrentLang(lang);
     setLanguageSelected(true);
   };
