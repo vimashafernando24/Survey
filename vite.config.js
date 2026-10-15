@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import 'dotenv/config';
 import healthHandler from './api/health.js';
 import responsesHandler from './api/responses.js';
+import submissionValidation from './api/_submissionValidation.js';
+
+const { readJsonRequestBody } = submissionValidation;
 
 const API_HANDLERS = {
   '/api/health': healthHandler,
@@ -18,21 +21,23 @@ function localVercelFunctions() {
         const handler = API_HANDLERS[pathname];
         if (!handler) return next();
 
+        res.status = statusCode => {
+          res.statusCode = statusCode;
+          return res;
+        };
+        res.json = payload => {
+          if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify(payload));
+        };
+
         try {
           if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
-            let rawBody = '';
-            for await (const chunk of req) rawBody += chunk;
-            req.body = rawBody ? JSON.parse(rawBody) : {};
+            const parsedRequest = await readJsonRequestBody(req);
+            if (parsedRequest.error) {
+              return res.status(parsedRequest.statusCode).json({error:parsedRequest.error});
+            }
+            req.body = parsedRequest.body;
           }
-
-          res.status = statusCode => {
-            res.statusCode = statusCode;
-            return res;
-          };
-          res.json = payload => {
-            if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
-            res.end(JSON.stringify(payload));
-          };
 
           await handler(req, res);
         } catch (error) {

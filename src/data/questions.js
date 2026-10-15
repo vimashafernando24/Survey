@@ -20,10 +20,15 @@ const Q = [
  <p><strong>Estimated time:</strong> 15–25 minutes</p>
  <ul>
    <li>No personal identifying information collected</li>
-   <li>Participation is voluntary and completely confidential</li>
+   <li>Participation is voluntary and your responses will be kept confidential</li>
    <li>Selected answers are sent to an AI service to prepare your personal reflection</li>
    <li>Your answers help NYSC improve youth programmes</li>
  </ul>
+ <p><strong>Withdrawal:</strong> Participation is voluntary. You may stop answering and withdraw at any time before selecting “Submit My Responses”. Any unsubmitted responses saved on this device can be discarded by selecting “Start Over” if you return, and they are automatically discarded after 7 days. Because this survey is anonymous, your individual response cannot be reliably identified and removed after submission.</p>
+ <p><strong>Researcher contact</strong><br>
+ <strong>Researcher:</strong> Vimasha Fernando<br>
+ <strong>Email:</strong> it22166456@my.sliit.lk<br>
+ <strong>Institution:</strong> Sri Lanka Institute of Information Technology (SLIIT)</p>
  <p>Please answer honestly — there are no right or wrong responses.</p>`,
  next:'A_DIV'},
 

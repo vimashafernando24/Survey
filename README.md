@@ -55,5 +55,6 @@ functions. Survey submissions remain in MongoDB Atlas.
 
 1. Import this GitHub repository into Vercel.
 2. Set the `MONGODB_URI` environment variable for Production.
-3. Deploy and verify that `/api/health` returns a JSON response with
-   `"status": "ok"`.
+3. Deploy and verify that `/api/health` returns HTTP 200 with the plain-text
+   response `ok`. If the database connectivity check fails, the endpoint
+   returns HTTP 503 with the generic plain-text response `unavailable`.

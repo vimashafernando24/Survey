@@ -9,9 +9,11 @@ module.exports = async function handler(req, res) {
   try {
     const db = await getDatabase();
     await db.command({ ping: 1 });
-    return res.status(200).json({ status: 'ok', database: 'connected' });
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).end('ok');
   } catch (error) {
     console.error('Health check failed:', error);
-    return res.status(503).json({ status: 'unavailable', database: 'disconnected' });
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(503).end('unavailable');
   }
 };

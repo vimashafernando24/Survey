@@ -19,29 +19,21 @@ async function verifyResponses() {
     const count = await collection.countDocuments();
     console.log(`\n✓ Total responses stored: ${count}`);
     
-    // Get latest response
-    const latest = await collection.findOne({}, { sort: { createdAt: -1 } });
+    // Retrieve only non-sensitive metadata from the latest response.
+    const latest = await collection.findOne(
+      {},
+      {
+        sort: { createdAt: -1 },
+        projection: { _id: 0, createdAt: 1, schema_version: 1 }
+      }
+    );
     
     if (latest) {
-      console.log(`✓ Most recent response ID: ${latest._id}`);
       console.log(`✓ Stored at: ${latest.createdAt}`);
       
-      // Check schema version and survey data
+      // Check schema version without retrieving or printing participant answers.
       const schemaVersion = latest.schema_version || 'v1';
       console.log(`✓ Schema version: ${schemaVersion}`);
-      if (schemaVersion === 'v2') {
-        const firstAnswer = latest.answers && Object.values(latest.answers)[0];
-        if (firstAnswer) {
-          console.log(`✓ Survey data detected: ${firstAnswer.variable} = ${firstAnswer.value}`);
-        }
-      } else {
-        if (latest.age_group) {
-          console.log(`✓ Survey data detected (v1): age_group = ${latest.age_group}`);
-        }
-        if (latest.test_data) {
-          console.log(`✓ Test data detected: ${latest.test_data}`);
-        }
-      }
       
       console.log('\n✓ Database connection successful and responses are being stored!');
     } else {

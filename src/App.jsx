@@ -24,6 +24,7 @@ import './styles.css';
 const DRAFT_KEY = 'nysc_swts_v2';
 const SESSION_KEY = 'nysc_swts_session_id';
 const SESSION_START_KEY = 'nysc_swts_session_started_at';
+const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const enableApiSubmit = true;
 const developerMode = false;
 const SEC_EST = {INTRO:1,A:22,B:22,C:14,D:29,E:55,F:10,END:0};
@@ -41,14 +42,29 @@ function readPath(obj, path) {
   }, obj);
 }
 
-function loadDraft(){
+function clearSavedDraftAndSession(){
+  clearDraft();
+  clearSessionId();
+  clearSessionStartTime();
+}
+
+function loadDraft(now = Date.now()){
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if(!raw) return null;
     const d = JSON.parse(raw);
+    const timestampIsInvalid = !Number.isFinite(d?.ts) || d.ts <= 0 || d.ts > now;
+    const draftHasExpired = !timestampIsInvalid && now - d.ts > DRAFT_MAX_AGE_MS;
+    if(timestampIsInvalid || draftHasExpired){
+      clearSavedDraftAndSession();
+      return null;
+    }
     if(!d || !d.id || d.id === 'INTRO') return null;
     return d;
-  } catch(e){ return null; }
+  } catch(e){
+    clearSavedDraftAndSession();
+    return null;
+  }
 }
 
 function clearDraft(){
