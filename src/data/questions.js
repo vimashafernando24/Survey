@@ -21,6 +21,7 @@ const Q = [
  <ul>
    <li>No personal identifying information collected</li>
    <li>Participation is voluntary and completely confidential</li>
+   <li>Selected answers are sent to an AI service to prepare your personal reflection</li>
    <li>Your answers help NYSC improve youth programmes</li>
  </ul>
  <p>Please answer honestly — there are no right or wrong responses.</p>`,
